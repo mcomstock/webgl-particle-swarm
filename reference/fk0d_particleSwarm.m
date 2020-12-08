@@ -108,7 +108,7 @@ to_best = to_particle;
 xk_best = xk_particle;
 ucsi_best = ucsi_particle;
 uc_best = uc_particle;
-uv_best = uv_particle;run_simulations_solver
+uv_best = uv_particle;
 dist_best = 100000*ones(size(tr_particle));
 
 % numerical parameters
@@ -298,6 +298,7 @@ for k=1:particle_iterations
     phi_local=2.05; phi_global=2.05; phi=phi_local+phi_global;
     chi = 0.05 * 2/(phi-2+sqrt(phi*(phi-4)));
     chi_tr = chi*(trmax+trmin)/2;
+    fprintf("chi_tr is:\t%f",chi_tr);
     chi_tsi = chi*(tsimax+tsimin)/2;
     chi_twp = chi*(twpmax+twpmin)/2;
     chi_td = chi*(tdmax+tdmin)/2;
@@ -336,6 +337,7 @@ for k=1:particle_iterations
         + phi_global*rand(size(uc_particle)) .* (uc_global-uc_particle));
     uv_v = chi_uv * (uv_v + phi_local*rand(size(uv_particle)) .* (uv_best-uv_particle) ...
         + phi_global*rand(size(uv_particle)) .* (uv_global-uv_particle));
+%     return;
     
     tr_particle = tr_particle + tr_v;
     tsi_particle = tsi_particle + tsi_v;
@@ -362,6 +364,60 @@ for k=1:particle_iterations
 %     plot(b_particle,'ro'),hold on,plot(bmax*ones(size(b_particle)),'k'),plot(bmin*ones(size(b_particle)),'k'),hold off
 %     subplot(3,1,3)
 %     plot(eps_particle,'ro'),hold on,plot(epsmax*ones(size(eps_particle)),'k'),plot(epsmin*ones(size(eps_particle)),'k'),hold off
+    
+    check_oob_tr = (tr_particle<=trmin) + (tr_particle>=trmax);
+    fprintf("\n# tr particles OOB:\t%d\n",sum(check_oob_tr));
+	fprintf("The average tr velocity is:\t%f\n",mean(tr_v));
+
+    check_oob_tsi = (tsi_particle<=tsimin) + (tsi_particle>=tsimax);
+    fprintf("\n# tsi particles OOB:\t%d\n",sum(check_oob_tsi));
+	fprintf("The average tsi velocity is:\t%f\n",mean(tsi_v));
+
+    check_oob_twp = (twp_particle<=twpmin) + (twp_particle>=twpmax);
+    fprintf("\n# twp particles OOB:\t%d\n",sum(check_oob_twp));
+	fprintf("The average twp velocity is:\t%f\n",mean(twp_v));
+    
+    check_oob_td = (td_particle<=tdmin) + (td_particle>=tdmax);
+    fprintf("\n# td particles OOB:\t%d\n",sum(check_oob_td));
+	fprintf("The average td velocity is:\t%f\n",mean(td_v));
+
+    check_oob_tvp = (tvp_particle<=tvpmin) + (tvp_particle>=tvpmax);
+    fprintf("\n# tvp particles OOB:\t%d\n",sum(check_oob_tvp));
+	fprintf("The average tvp velocity is:\t%f\n",mean(tvp_v));
+
+    check_oob_tv1m = (tv1m_particle<=tv1mmin) + (tv1m_particle>=tv1mmax);
+    fprintf("\n# tv1m particles OOB:\t%d\n",sum(check_oob_tv1m));
+	fprintf("The average tv1m velocity is:\t%f\n",mean(tv1m_v));
+
+    check_oob_tv2m = (tv2m_particle<=tv2mmin) + (tv2m_particle>=tv2mmax);
+    fprintf("\n# tv2m particles OOB:\t%d\n",sum(check_oob_tv2m));
+	fprintf("The average tv2m velocity is:\t%f\n",mean(tv2m_v));
+
+    check_oob_twm = (twm_particle<=twmmin) + (twm_particle>=twmmax);
+    fprintf("\n# twm particles OOB:\t%d\n",sum(check_oob_twm));
+	fprintf("The average twm velocity is:\t%f\n",mean(twm_v));
+
+    check_oob_to = (to_particle<=tomin) + (to_particle>=tomax);
+    fprintf("\n# to particles OOB:\t%d\n",sum(check_oob_to));
+	fprintf("The average to velocity is:\t%f\n",mean(to_v));
+
+    
+    check_oob_xk = (xk_particle<=xkmin) + (xk_particle>=xkmax);
+    fprintf("\n# xk particles OOB:\t%d\n",sum(check_oob_xk));
+	fprintf("The average xk velocity is:\t%f\n",mean(xk_v));
+
+    check_oob_ucsi = (ucsi_particle<=ucsimin) + (ucsi_particle>=ucsimax);
+    fprintf("\n# ucsi particles OOB:\t%d\n",sum(check_oob_ucsi));
+	fprintf("The average ucsi velocity is:\t%f\n",mean(ucsi_v));
+
+    check_oob_uc = (uc_particle<=ucmin) + (uc_particle>=ucmax);
+    fprintf("\n# uc particles OOB:\t%d\n",sum(check_oob_uc));
+	fprintf("The average uc velocity is:\t%f\n",mean(uc_v));
+
+    check_oob_uv = (uv_particle<=uvmin) + (uv_particle>=uvmax);
+    fprintf("\n# uv particles OOB:\t%d\n",sum(check_oob_uv));
+	fprintf("The average uv velocity is:\t%f\n",mean(uv_v));
+
     
     % check for any updated param being out of bounds
     tr_particle = (tr_particle<trmax).*tr_particle + (tr_particle>=trmax).*(trmin+0.75*(trmax-trmin)*rand(1,nparticles));

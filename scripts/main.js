@@ -75,10 +75,11 @@ require([
 
   var phi = env.particles.phi_global + env.particles.phi_local;
   var chi = 0.05 * 2 / (phi - 2 + Math.sqrt(phi * (phi - 4)));
-
+  // console.log("Chi is:\t"+chi);
   for (var i = 0; i < 4; ++i) {
-    env.particles.chi.push(env.bounds[i].map(([min, max]) => chi * (max - min)/2));
+    env.particles.chi.push(env.bounds[i].map(([min, max]) => chi * (max + min)/2));
   }
+  // console.log(env.particles.chi);
 
   for(var i  =0; i < 4; i++)
   {
@@ -306,7 +307,7 @@ require([
     pariable: true,
     data: local_best_error_init,
   });
-  console.log(local_bests_error_texture_in.value);
+  // console.log(local_bests_error_texture_in.value);
 
   var local_bests_error_texture_out = new Abubu.Float32Texture(particles_width, particles_height, {
     pariable: true,
@@ -317,13 +318,23 @@ require([
     pariable: true,
   });
 
-  var reduced_error_1_texture = new Abubu.Float32Texture(particles_width, particles_height, {
+
+  var reduced_error_1_texture = new Abubu.Float32Texture(particles_width,1,{
+    pairable: true,
+  });
+  var reduced_error_2_texture = new Abubu.Float32Texture(1,1,{
     pairable: true,
   });
 
-  var reduced_error_2_texture = new Abubu.Float32Texture(particles_width, particles_height, {
-    pairable: true,
-  });
+
+
+  // var reduced_error_1_texture = new Abubu.Float32Texture(particles_width, particles_height, {
+  //   pairable: true,
+  // });
+
+  // var reduced_error_2_texture = new Abubu.Float32Texture(particles_width, particles_height, {
+  //   pairable: true,
+  // });
 
   env.velocity_update.istate  = new Uint32Array(particles_width*particles_height*4);
   env.velocity_update.imat    = new Uint32Array(particles_width*particles_height*4);
@@ -344,6 +355,7 @@ require([
 
   var p=0;
   var seed = Date.now();
+  // var seed = 0;
   var tm = new Abubu.TinyMT({vmat:0});
 
   for(var j=0 ; j<particles_height ; j++){
@@ -695,6 +707,10 @@ making a separate solver just to update the error?
 
   function update_global_best() {
     var [best_error, best_x_index, best_y_index] = reduced_error_2_texture.value.slice(-4, -1);
+    // console.log(reduced_error_2_texture.value);
+    // console.log(best_error);
+    // console.log(best_x_index);
+    // console.log(best_y_index);
 
     if (best_error < env.particles.best_error_value) {
       var best_particle_index = 4 * (best_y_index * particles_width + best_x_index);
@@ -755,11 +771,19 @@ making a separate solver just to update the error?
     positions_4_copy.render();
   }
 
-  console.log(velocities_texture_1.value);
+  
   for (var i = 0; i < 8; ++i) {
     console.log(env.particles.best_error_value);
     run();
   }
+
+  var avg_v  = 0.0;
+  for(var i = 0; i < particles_width*particles_height*4; i+=4)
+  {
+    avg_v += velocities_texture_1.value[i];
+  }
+  console.log("Avg vel:\t"+avg_v / (particles_width * particles_height * 4));
+
 
   var bestArr = [];
   for(var i = 0; i < 4; i++)
