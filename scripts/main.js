@@ -61,7 +61,8 @@ require([
       lower_bounds:[],
       upper_bounds:[],
       learning_rate: 0.1,
-      omega: 0.05,
+      // omega: 0.05,
+      omega: 1.0,
     },
     bounds: [
       [[25, 200], [10, 300], [50, 500], [0.15, 0.4]],
@@ -115,12 +116,31 @@ require([
   var init_array_3 = new Float32Array(num_particles * 4);
   var init_array_4 = new Float32Array(num_particles * 4);
 
+  var v_init_arr_1 = new Float32Array(num_particles * 4);
+  var v_init_arr_2 = new Float32Array(num_particles * 4);
+  var v_init_arr_3 = new Float32Array(num_particles * 4);
+  var v_init_arr_4 = new Float32Array(num_particles * 4);
+
   function random_init(i, j) {
     var [min, max] = env.bounds[i][j];
     return Math.random() * (max - min) + min;
   }
 
+  var v_init_scale = 0.00005;
+  // var v_init_scale = 0.5;
+  function random_v_init(i,j)
+  {
+    // var [min, max] = env.bounds[i][j];
+    // var realMin = -1 * (Math.abs(max - min));
+    // var realMax = Math.abs(max-min);
+    // return (Math.random() * (realMax - realMin) + realMin) * v_init_scale;
+    // return (Math.random() * (realMax - realMin) + realMin);
+    return Math.random() * v_init_scale;
+    // return 0;
+  }
+
   var p = 0;
+  var p_v = 0;
   for (var i = 0; i < num_particles; ++i) {
     init_array_1[p] = random_init(0, 0);
     init_array_2[p] = random_init(1, 0);
@@ -141,6 +161,30 @@ require([
     init_array_2[p] = random_init(1, 3);
     init_array_3[p] = random_init(2, 3);
     init_array_4[p++] = 0;
+
+
+    v_init_arr_1[p_v] = random_v_init(0,0);
+    v_init_arr_2[p_v] = random_v_init(1,0);
+    v_init_arr_3[p_v] = random_v_init(2,0);
+    v_init_arr_4[p_v++] = random_v_init(3,0);
+  
+
+    v_init_arr_1[p_v] = random_v_init(0,1);
+    v_init_arr_2[p_v] = random_v_init(1,1);
+    v_init_arr_3[p_v] = random_v_init(2,1);
+    v_init_arr_4[p_v++] = 0;
+
+    v_init_arr_1[p_v] = random_v_init(0,2);
+    v_init_arr_2[p_v] = random_v_init(1,2);
+    v_init_arr_3[p_v] = random_v_init(2,2);
+    v_init_arr_4[p_v++] = 0;
+
+    v_init_arr_1[p_v] = random_v_init(0,3);
+    v_init_arr_2[p_v] = random_v_init(1,3);
+    v_init_arr_3[p_v] = random_v_init(2,3);
+    v_init_arr_4[p_v++] = 0;
+
+
   }
 
   //
@@ -178,15 +222,19 @@ require([
 
   var velocities_texture_1 = new Abubu.Float32Texture(particles_width, particles_height, {
     pariable: true,
+    data: v_init_arr_1,
   });
   var velocities_texture_2 = new Abubu.Float32Texture(particles_width, particles_height, {
     pariable: true,
+    data: v_init_arr_2,
   });
   var velocities_texture_3 = new Abubu.Float32Texture(particles_width, particles_height, {
     pariable: true,
+    data: v_init_arr_3,
   });
   var velocities_texture_4 = new Abubu.Float32Texture(particles_width, particles_height, {
     pariable: true,
+    data: v_init_arr_4,
   });
 
   var bests_texture_1 = new Abubu.Float32Texture(particles_width, particles_height, {
@@ -247,9 +295,18 @@ require([
   // The error textures are used to reduce the error quantities of each particles from each
   // simulation run down to a global best.
 
-  var local_bests_error_texture = new Abubu.Float32Texture(particles_width, particles_height, {
+  var local_best_error_init = new Float32Array(particles_width * particles_height * 4);
+  // local_best_error_init.fill(100000, 0, particles_width * particles_height * 4);
+  for(var i = 0; i < particles_width * particles_height * 4; i+=4)
+  {
+    local_best_error_init[i] = 100000;
+  }
+
+  var local_bests_error_texture_in = new Abubu.Float32Texture(particles_width, particles_height, {
     pariable: true,
+    data: local_best_error_init,
   });
+  console.log(local_bests_error_texture_in.value);
 
   var local_bests_error_texture_out = new Abubu.Float32Texture(particles_width, particles_height, {
     pariable: true,
@@ -270,6 +327,20 @@ require([
 
   env.velocity_update.istate  = new Uint32Array(particles_width*particles_height*4);
   env.velocity_update.imat    = new Uint32Array(particles_width*particles_height*4);
+
+
+  // Initialize the local bests with the inital positions.
+  var init_bests_1 = new Abubu.Copy(particles_texture_1, bests_texture_1);
+  var init_bests_2 = new Abubu.Copy(particles_texture_2, bests_texture_2);
+  var init_bests_3 = new Abubu.Copy(particles_texture_3, bests_texture_3);
+  var init_bests_4 = new Abubu.Copy(particles_texture_4, bests_texture_4);
+
+  init_bests_1.render();
+  init_bests_2.render();
+  init_bests_3.render();
+  init_bests_4.render();
+  // console.log(bests_texture_1.value);
+
 
   var p=0;
   var seed = Date.now();
@@ -453,7 +524,7 @@ making a separate solver just to update the error?
         },
         local_bests_error_texture: {
           type: 't',
-          value: local_bests_error_texture,
+          value: local_bests_error_texture_in,
         },
         cur_vals_texture: {
           type: 't',
@@ -684,7 +755,9 @@ making a separate solver just to update the error?
     positions_4_copy.render();
   }
 
+  console.log(velocities_texture_1.value);
   for (var i = 0; i < 8; ++i) {
+    console.log(env.particles.best_error_value);
     run();
   }
 

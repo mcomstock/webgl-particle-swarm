@@ -25,7 +25,7 @@
 % uv=0.04;
 stimmag=0.1;
 
-usave0 = load('20190828-conner/zebrafish_onecl.txt'); %400ms
+usave0 = load('../data/zebrafish_onecl.txt'); %400ms
 usave0 = usave0/max(usave0(:));
 
 tr_true = 33.33; tsi_true = 29; twp_true = 870; td_true = 0.25;
@@ -93,6 +93,7 @@ xk_v = vinit_scale*rand(1,nparticles);
 ucsi_v = vinit_scale*rand(1,nparticles);
 uc_v = vinit_scale*rand(1,nparticles);
 uv_v = vinit_scale*rand(1,nparticles);
+test = rand(1,nparticles);
 
 % set up best storage for each particle
 tr_best = tr_particle;
@@ -107,7 +108,7 @@ to_best = to_particle;
 xk_best = xk_particle;
 ucsi_best = ucsi_particle;
 uc_best = uc_particle;
-uv_best = uv_particle;
+uv_best = uv_particle;run_simulations_solver
 dist_best = 100000*ones(size(tr_particle));
 
 % numerical parameters
@@ -131,6 +132,7 @@ best_error = zeros(particle_iterations,1);
 debug=0;
 
 for k=1:particle_iterations
+    fprintf("Current avg tr velocity:\t%f\n",mean(tr_v));
     fprintf('iteration %d\n',k)
     if(debug)
         fprintf('***** k = %d\n',k)
