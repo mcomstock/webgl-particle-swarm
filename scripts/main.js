@@ -8,7 +8,8 @@ require([
   'text!shaders/update_velocities.frag',
   'text!shaders/update_particles.frag',
   'text!shaders/update_local_bests.frag',
-  'text!shaders/copy_uint_texture.frag'
+  'text!shaders/copy_uint_texture.frag',
+  'text!shaders/bound_velocities.frag',
 ], function(
   Abubu,
   ActualData,
@@ -19,6 +20,7 @@ require([
   UpdateParticlesShader,
   UpdateLocalBestsShader,
   CopyUIntTextureShader,
+  BoundVelocitiesShader,
 ) {
   'use strict';
 
@@ -48,8 +50,10 @@ require([
       w_init: 1.0,
     },
     particles: {
-      phi_local: 2.05,
-      phi_global: 2.05,
+      // phi_local: 2.05,
+      // phi_global: 2.05,
+      phi_local: -0.2746,
+      phi_global: 4.8976,
       global_bests: [
         [0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0],
@@ -60,9 +64,10 @@ require([
       chi: [],
       lower_bounds:[],
       upper_bounds:[],
-      learning_rate: 0.1,
+      // learning_rate: 0.1,
+      learning_rate: 1.0,
       // omega: 0.05,
-      omega: 1.0,
+      omega: -0.3963,
     },
     bounds: [
       [[25, 200], [10, 300], [50, 500], [0.15, 0.4]],
@@ -70,14 +75,19 @@ require([
       [[5, 50], [1, 15], [0.2, 0.9], [0.1, 0.25]],
       [[0.005, 0.05], [0, 0], [0, 0], [0, 0]],
     ],
-    velocity_update: {},
+    velocity_update: {
+      lower_bounds: [],
+      upper_bounds: [],
+    },
   };
 
   var phi = env.particles.phi_global + env.particles.phi_local;
   var chi = 0.05 * 2 / (phi - 2 + Math.sqrt(phi * (phi - 4)));
   // console.log("Chi is:\t"+chi);
   for (var i = 0; i < 4; ++i) {
-    env.particles.chi.push(env.bounds[i].map(([min, max]) => chi * (max + min)/2));
+    // env.particles.chi.push(env.bounds[i].map(([min, max]) => chi * (max + min)/2));
+    var add_arr = [1,1,1,1];
+    env.particles.chi.push(add_arr);
   }
   // console.log(env.particles.chi);
 
@@ -85,13 +95,25 @@ require([
   {
     var addArr_low = [];
     var addArr_up = [];
+
+    var addArr_v_low = [];
+    var addArr_v_up = [];
+
     for(var j = 0; j < 4; j++)
     {
       addArr_low.push(env.bounds[i][j][0]);
       addArr_up.push(env.bounds[i][j][1]);
+
+      var range = Math.abs(env.bounds[i][j][1] - env.bounds[i][j][0]);
+      addArr_v_low.push(-1.0 * range);
+      addArr_v_up.push(range);
+
     }
     env.particles.lower_bounds.push(addArr_low);
     env.particles.upper_bounds.push(addArr_up);
+
+    env.velocity_update.lower_bounds.push(addArr_v_low);
+    env.velocity_update.upper_bounds.push(addArr_v_up);
   }
 
   //
@@ -131,12 +153,12 @@ require([
   // var v_init_scale = 0.5;
   function random_v_init(i,j)
   {
-    // var [min, max] = env.bounds[i][j];
-    // var realMin = -1 * (Math.abs(max - min));
-    // var realMax = Math.abs(max-min);
+    var [min, max] = env.bounds[i][j];
+    var realMin = -1 * (Math.abs(max - min));
+    var realMax = Math.abs(max-min);
     // return (Math.random() * (realMax - realMin) + realMin) * v_init_scale;
-    // return (Math.random() * (realMax - realMin) + realMin);
-    return Math.random() * v_init_scale;
+    return (Math.random() * (realMax - realMin) + realMin);
+    // return Math.random() * v_init_scale;
     // return 0;
   }
 
@@ -566,6 +588,33 @@ making a separate solver just to update the error?
   var local_best_update_4_solver = makeUpdateLocalBestsSolver(bests_texture_4, particles_texture_4, bests_out_texture_4);
 
 
+  function makeBoundVelocitiesTexture(in_v_tex, out_v_tex, num)
+  {
+    return new Abubu.Solver({
+      fragmentShader: BoundVelocitiesShader,
+      uniforms:{
+        velocities_texture: {
+          type: 't',
+          value: in_v_tex,
+        },
+        lower_bounds: {
+          type: 'v4',
+          value: env.velocity_update.lower_bounds[num],
+        },
+        upper_bounds: {
+          type: 'v4',
+          value: env.velocity_update.upper_bounds[num],
+        },
+      },
+      targets: {
+        new_velocity: {
+          location: 0,
+          target: out_v_tex,
+        },
+      },
+    });
+  }
+
 
   //
   // Solvers to update the velocities
@@ -632,6 +681,11 @@ making a separate solver just to update the error?
   var velocity_2_solver = makeVelocityUpdateSolver(particles_texture_2, velocities_texture_2, bests_texture_2, velocities_out_texture_2, 1);
   var velocity_3_solver = makeVelocityUpdateSolver(particles_texture_3, velocities_texture_3, bests_texture_3, velocities_out_texture_3, 2);
   var velocity_4_solver = makeVelocityUpdateSolver(particles_texture_4, velocities_texture_4, bests_texture_4, velocities_out_texture_4, 3);
+
+  var bound_velocities_1_solver = makeBoundVelocitiesTexture(velocities_out_texture_1, velocities_texture_1, 0);
+  var bound_velocities_2_solver = makeBoundVelocitiesTexture(velocities_out_texture_2, velocities_texture_2, 1);
+  var bound_velocities_3_solver = makeBoundVelocitiesTexture(velocities_out_texture_3, velocities_texture_3, 2);
+  var bound_velocities_4_solver = makeBoundVelocitiesTexture(velocities_out_texture_4, velocities_texture_4, 3);
 
   //
   // Solvers to update the positions
@@ -724,6 +778,17 @@ making a separate solver just to update the error?
     }
   }
 
+  function init() {
+    run_simulations_solver.render();
+
+    reduce_error_1_solver.render();
+    reduce_error_2_solver.render();
+
+    update_global_best();
+  }
+
+  init();
+
   function run() {
     run_simulations_solver.render();
 
@@ -751,10 +816,16 @@ making a separate solver just to update the error?
     velocity_4_solver.render();
     env.velocity_update.ftinymtState.data = env.velocity_update.stinymtState.value;
 
-    velocities_1_copy.render();
-    velocities_2_copy.render();
-    velocities_3_copy.render();
-    velocities_4_copy.render();
+
+    bound_velocities_1_solver.render();
+    bound_velocities_2_solver.render();
+    bound_velocities_3_solver.render();
+    bound_velocities_4_solver.render();
+
+    // velocities_1_copy.render();
+    // velocities_2_copy.render();
+    // velocities_3_copy.render();
+    // velocities_4_copy.render();
 
     position_1_solver.render();
     env.velocity_update.ftinymtState.data = env.velocity_update.stinymtState.value;
@@ -772,7 +843,7 @@ making a separate solver just to update the error?
   }
 
   
-  for (var i = 0; i < 8; ++i) {
+  for (var i = 0; i < 512; ++i) {
     console.log(env.particles.best_error_value);
     run();
   }

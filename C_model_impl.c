@@ -5,19 +5,35 @@
 #include <math.h>
 
 
-#define TR_POS 33.33
-#define TSI_POS 29.0
-#define TWP_POS 870.0
-#define TD_POS 0.25
-#define TVP_POS 3.33
-#define TV1M_POS 19.6
-#define TV2M_POS 1250.0
-#define TWM_POS 41.0
-#define TO_POS 12.5
-#define XK_POS 10.0
-#define UCSI_POS 0.85
-#define UC_POS 0.13
-#define UV_POS 0.04
+// #define TR_POS 33.33
+// #define TSI_POS 29.0
+// #define TWP_POS 870.0
+// #define TD_POS 0.25
+// #define TVP_POS 3.33
+// #define TV1M_POS 19.6
+// #define TV2M_POS 1250.0
+// #define TWM_POS 41.0
+// #define TO_POS 12.5
+// #define XK_POS 10.0
+// #define UCSI_POS 0.85
+// #define UC_POS 0.13
+// #define UV_POS 0.04
+
+#define TR_POS 100.01567
+#define TSI_POS 75.586
+#define TWP_POS 304.35117
+#define TD_POS 0.16317
+#define TVP_POS 4.8449
+#define TV1M_POS 11.08933
+#define TV2M_POS 609.8374633
+#define TWM_POS 16.6054
+#define TO_POS 7.5254
+#define XK_POS 1.65253
+#define UCSI_POS 0.55996
+#define UC_POS 0.101079
+#define UV_POS 0.019021
+
+
 
 #define TANH(x) ((exp(2.0*(x)) - 1.0) / (exp(2.0*(x)) + 1.0))
 // #define TANH(x) tanh(x)
