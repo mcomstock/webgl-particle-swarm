@@ -868,12 +868,12 @@ making a separate solver just to update the error?
     run();
   }
 
-  var avg_v  = 0.0;
-  for(var i = 0; i < particles_width*particles_height*4; i+=4)
-  {
-    avg_v += velocities_texture_1.value[i];
-  }
-  console.log("Avg vel:\t"+avg_v / (particles_width * particles_height * 4));
+  // var avg_v  = 0.0;
+  // for(var i = 2; i < particles_width*particles_height*4; i+=4)
+  // {
+  //   avg_v += velocities_texture_1.value[i];
+  // }
+  // console.log("Avg vel:\t"+avg_v / (particles_width * particles_height * 4));
 
 
   var bestArr = [];
@@ -886,7 +886,7 @@ making a separate solver just to update the error?
   }
   console.log(bestArr);
   console.log(env.particles.best_error_value);
-  console.log(local_bests_error_texture_in.value);
+  // console.log(local_bests_error_texture_in.value);
   error_renderer.render();
 
 });
