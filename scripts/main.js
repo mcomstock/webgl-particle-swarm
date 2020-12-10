@@ -10,6 +10,7 @@ require([
   'text!shaders/update_local_bests.frag',
   'text!shaders/copy_uint_texture.frag',
   'text!shaders/bound_velocities.frag',
+  'text!shaders/error_shader.frag',
 ], function(
   Abubu,
   ActualData,
@@ -21,6 +22,7 @@ require([
   UpdateLocalBestsShader,
   CopyUIntTextureShader,
   BoundVelocitiesShader,
+  ErrorShader,
 ) {
   'use strict';
 
@@ -29,6 +31,7 @@ require([
   //
 
   var canvas_1 = document.getElementById('canvas_1');
+  var canvas_2 = document.getElementById('canvas_2');
   var particles_width = parseInt(canvas_1.getAttribute('width'));
   var particles_height = parseInt(canvas_1.getAttribute('height'));
 
@@ -323,6 +326,7 @@ require([
   for(var i = 0; i < particles_width * particles_height * 4; i+=4)
   {
     local_best_error_init[i] = 100000;
+    local_best_error_init[i+3] = 1.0;
   }
 
   var local_bests_error_texture_in = new Abubu.Float32Texture(particles_width, particles_height, {
@@ -749,6 +753,8 @@ making a separate solver just to update the error?
   var local_bests_3_copy = new Abubu.Copy(bests_out_texture_3, bests_texture_3);
   var local_bests_4_copy = new Abubu.Copy(bests_out_texture_4, bests_texture_4);
 
+  var local_bests_error_texture_copy = new Abubu.Copy(local_bests_error_texture_out, local_bests_error_texture_in);
+
   var positions_1_copy = new Abubu.Copy(particles_out_texture_1, particles_texture_1);
   var positions_2_copy = new Abubu.Copy(particles_out_texture_2, particles_texture_2);
   var positions_3_copy = new Abubu.Copy(particles_out_texture_3, particles_texture_3);
@@ -789,6 +795,18 @@ making a separate solver just to update the error?
 
   init();
 
+  var error_renderer = new Abubu.Solver({
+    fragmentShader: ErrorShader,
+    canvas: canvas_2,
+    uniforms: {
+      error_tex: {
+        type: 't',
+        value: local_bests_error_texture_in,
+      },
+    },
+  });
+
+
   function run() {
     run_simulations_solver.render();
 
@@ -806,6 +824,8 @@ making a separate solver just to update the error?
     local_bests_2_copy.render();
     local_bests_3_copy.render();
     local_bests_4_copy.render();
+
+    local_bests_error_texture_copy.render();
 
     velocity_1_solver.render();
     env.velocity_update.ftinymtState.data = env.velocity_update.stinymtState.value;
@@ -843,7 +863,7 @@ making a separate solver just to update the error?
   }
 
   
-  for (var i = 0; i < 512; ++i) {
+  for (var i = 0; i < 8; ++i) {
     console.log(env.particles.best_error_value);
     run();
   }
@@ -866,5 +886,7 @@ making a separate solver just to update the error?
   }
   console.log(bestArr);
   console.log(env.particles.best_error_value);
+  console.log(local_bests_error_texture_in.value);
+  error_renderer.render();
 
 });
