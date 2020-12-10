@@ -26,6 +26,7 @@ require([
   // Get canvas information
   //
 
+  var start_time = Date.now();
   var canvas_1 = document.getElementById('canvas_1');
   var particles_width = parseInt(canvas_1.getAttribute('width'));
   var particles_height = parseInt(canvas_1.getAttribute('height'));
@@ -791,17 +792,17 @@ making a separate solver just to update the error?
   }
 
   
-  for (var i = 0; i < 32; ++i) {
+  for (var i = 0; i < 8; ++i) {
     console.log(env.particles.best_error_value);
     run();
   }
 
-  var avg_v  = 0.0;
-  for(var i = 0; i < particles_width*particles_height*4; i+=4)
-  {
-    avg_v += velocities_texture_1.value[i];
-  }
-  console.log("Avg vel:\t"+avg_v / (particles_width * particles_height * 4));
+  // var avg_v  = 0.0;
+  // for(var i = 0; i < particles_width*particles_height*4; i+=4)
+  // {
+  //   avg_v += velocities_texture_1.value[i];
+  // }
+  // console.log("Avg vel:\t"+avg_v / (particles_width * particles_height * 4));
 
 
   var bestArr = [];
@@ -814,5 +815,7 @@ making a separate solver just to update the error?
   }
   console.log(bestArr);
   console.log(env.particles.best_error_value);
+
+  console.log("Elapsed time:\t" + (Date.now() - start_time) + "ms.\n");
 
 });
