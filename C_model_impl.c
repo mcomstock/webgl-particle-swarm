@@ -33,19 +33,19 @@
 // #define UC_POS 0.101079
 // #define UV_POS 0.019021
 
-#define TR_POS 107.53585815429688
-#define TSI_POS 154.70875549316406
-#define TWP_POS 333.2892150878906
-#define TD_POS 0.15113478899002075
-#define TVP_POS 17.16791534423828
-#define TV1M_POS 12.923192024230957
-#define TV2M_POS 1465.54296875
-#define TWM_POS 38.89768600463867
-#define TO_POS 22.027807235717773
-#define XK_POS 8.756203651428223
-#define UCSI_POS 0.512547492980957
-#define UC_POS 0.10676349699497223
-#define UV_POS 0.014267196878790855
+#define TR_POS 101.4594955444336
+#define TSI_POS 98.33734893798828
+#define TWP_POS 268.5346984863281
+#define TD_POS 0.22014516592025757
+#define TVP_POS 6.206625938415527
+#define TV1M_POS 47.53730773925781
+#define TV2M_POS 1000.5355834960938
+#define TWM_POS 91.08232116699219
+#define TO_POS 48.045433044433594
+#define XK_POS 12.532750129699707
+#define UCSI_POS 0.5306475162506104
+#define UC_POS 0.13606366515159607
+#define UV_POS 0.049632322043180466
 
 
 #define TANH(x) ((exp(2.0*(x)) - 1.0) / (exp(2.0*(x)) + 1.0))
@@ -462,8 +462,23 @@ int main(int argc, char const *argv[])
         // printf("Give me an output file name.\n");
     // }
 
+    double act_max = -10;
+    for (int i = 0; i < 400; ++i)
+    {
+        if(actual_data[i] > act_max)
+        {
+            act_max = actual_data[i];
+        }
+    }
+
+    for (int i = 0; i < 400; ++i)
+    {
+        actual_data[i] /= act_max;
+    }
+
     // FILE *u_out = fopen(argv[1],"w");
     FILE *u_out = fopen("U_out.data","w");
+    FILE *real_out = fopen("zebrafish.data","w");
 
     float dt, period, stim_start, stim_end, stim_mag;
     int num_beats;
@@ -502,7 +517,7 @@ int main(int argc, char const *argv[])
     int data_index = 0;
 
     // Run the simulation with the current swarm parameters
-    for (int step_count = 0; step_count < num_steps; ++step_count) {
+    for (int step_count = 1; step_count <= num_steps; ++step_count) {
         float p = u >= UC_POS ? 1.0 : 0.0;
         float q = u >= UV_POS ? 1.0 : 0.0;
 
@@ -559,14 +574,17 @@ int main(int argc, char const *argv[])
             // float actual = texelFetch(data_texture, ivec2(data_index++, 0), 0).r;
             // error += (u - actual)*(u - actual);
             fprintf(u_out, "%f\n", u);
+
             // printf("%f\n",error);
             float actual = actual_data[data_index++];
+            fprintf(real_out, "%f\n", actual);
             error+= (u-actual) * (u-actual);
         }
     }
 
     // error_texture = vec4(error, 0, 0, 0);
     fclose(u_out);
+    fclose(real_out);
     printf("%f\n",error);
     return 0;
 }
