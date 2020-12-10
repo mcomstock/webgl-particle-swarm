@@ -58,7 +58,7 @@ void main() {
     int data_index = 0;
 
     // Run the simulation with the current swarm parameters
-    for (int step_count = 0; step_count < num_steps; ++step_count) {
+    for (int step_count = 1; step_count <= num_steps; ++step_count) {
         float p = u >= UC_POS ? 1.0 : 0.0;
         float q = u >= UV_POS ? 1.0 : 0.0;
 

@@ -19,19 +19,56 @@
 // #define UC_POS 0.13
 // #define UV_POS 0.04
 
-#define TR_POS 104.01905822753906
-#define TSI_POS 93.89193725585938
-#define TWP_POS 489.7561950683594
-#define TD_POS 0.1716551035642624
-#define TVP_POS 17.431076049804688
-#define TV1M_POS 11.486534118652344
-#define TV2M_POS 1023.5277099609375
-#define TWM_POS 20.931568145751953
-#define TO_POS 9.950100898742676
-#define XK_POS 1.4286046028137207
-#define UCSI_POS 0.7417482137680054
-#define UC_POS 0.10581129044294357
-#define UV_POS 0.04515380784869194
+// \d+:\s+([\d.]+)\s+(#define\s+\S+\s+).*$
+
+// #define TR_POS 101.78449249267578
+// #define TSI_POS 96.5501480102539
+// #define TWP_POS 294.75909423828125
+// #define TD_POS 0.15660105645656586
+// #define TVP_POS 6.902024269104004
+// #define TV1M_POS 26.158510208129883
+// #define TV2M_POS 1350.5811767578125
+// #define TWM_POS 54.542991638183594
+// #define TO_POS 38.97053909301758
+// #define XK_POS 6.261730194091797
+// #define UCSI_POS 0.575133204460144
+// #define UC_POS 0.11254831403493881
+// #define UV_POS 0.045265208929777145
+
+// tr =  99.1020, tsi = 141.6957, twp=445.7468, td =   0.3721
+// tvp =  18.1109, tv1m =  37.1459, tv2m=1055.9734
+// twm =  29.7039, to =  30.0024, xk= 14.3969
+// ucsi =   0.4284, uc =   0.1214, uv=  0.0493
+
+// #define TR_POS 99.102
+// #define TSI_POS 141.6957
+// #define TWP_POS 445.7468
+// #define TD_POS 0.3721
+// #define TVP_POS 18.1109
+// #define TV1M_POS 37.1459
+// #define TV2M_POS 1055.9734
+// #define TWM_POS 29.7039
+// #define TO_POS 30.0024
+// #define XK_POS 14.3969
+// #define UCSI_POS 0.4284
+// #define UC_POS 0.1214
+// #define UV_POS 0.0493
+
+
+
+#define TR_POS 109.4105453491211
+#define TSI_POS 119.34735107421875
+#define TWP_POS 472.0563659667969
+#define TD_POS 0.300819456577301
+#define TVP_POS 6.168175220489502
+#define TV1M_POS 29.76814842224121
+#define TV2M_POS 929.6423950195312
+#define TWM_POS 85.08201599121094
+#define TO_POS 42.1693000793457
+#define XK_POS 6.456881999969482
+#define UCSI_POS 0.5691888928413391
+#define UC_POS 0.11070815473794937
+#define UV_POS 0.045711860060691833
 
 #define TANH(x) ((exp(2.0*(x)) - 1.0) / (exp(2.0*(x)) + 1.0))
 // #define TANH(x) tanh(x)
@@ -442,6 +479,22 @@ float actual_data[400] = {
 
 int main(int argc, char const *argv[])
 {
+
+    int fullCount = 0;
+    double realMax = -1.0;
+
+    for (int i = 0; i < 400; ++i)
+    {
+        if(actual_data[i] > realMax)
+        {
+            realMax = actual_data[i];
+        }
+    }
+    for (int i = 0; i < 400; ++i)
+    {
+        actual_data[i] /= realMax;
+    }
+
     // if(argc != 2)
     // {
         // printf("Give me an output file name.\n");
@@ -449,6 +502,7 @@ int main(int argc, char const *argv[])
 
     // FILE *u_out = fopen(argv[1],"w");
     FILE *u_out = fopen("U_out.data","w");
+    FILE *real_out = fopen("zebrafish.data","w");
 
     float dt, period, stim_start, stim_end, stim_mag;
     int num_beats;
@@ -487,7 +541,7 @@ int main(int argc, char const *argv[])
     int data_index = 0;
 
     // Run the simulation with the current swarm parameters
-    for (int step_count = 0; step_count < num_steps; ++step_count) {
+    for (int step_count = 1; step_count <= num_steps; ++step_count) {
         float p = u >= UC_POS ? 1.0 : 0.0;
         float q = u >= UV_POS ? 1.0 : 0.0;
 
@@ -546,12 +600,19 @@ int main(int argc, char const *argv[])
             fprintf(u_out, "%f\n", u);
             // printf("%f\n",error);
             float realVal = actual_data[data_index++];
+            fprintf(real_out, "%f\n", realVal);
+            if(fullCount < 10)
+            {
+                printf("%lf\t%lf\n",u,realVal);
+            }
             error+= (u- realVal) * (u - realVal);
+            fullCount++;
         }
     }
-
+    printf("Entered error block %d times.\n",fullCount);
     // error_texture = vec4(error, 0, 0, 0);
     fclose(u_out);
+    fclose(real_out);
     printf("Total error:\t%f\n",error);
     return 0;
 }

@@ -105,11 +105,26 @@ require([
   // Pad out the extra pixel values. The data could be stored more densely by using the full pixel
   // value and by using a two-dimensional texture, but for now there is not enough to require that.
   var p = 0;
+  var max_real_val = -100;
   for (var i = 0; i < data_length; ++i) {
-    data_array[p++] = parseFloat(actual_data[i].trim());
+    var realData = parseFloat(actual_data[i].trim());
+    // data_array[p++] = parseFloat(actual_data[i].trim());
+    data_array[p++] = realData;
     data_array[p++] = 0.0;
     data_array[p++] = 0.0;
     data_array[p++] = 0.0;
+
+    if(realData > max_real_val)
+    {
+      max_real_val = realData;
+    }
+  }
+
+  var p2 = 0;
+  for(var i  = 0; i < data_length; i++)
+  {
+    data_array[p2++] /= max_real_val;
+    p2 += 3;
   }
 
   var init_array_1 = new Float32Array(num_particles * 4);
@@ -776,7 +791,7 @@ making a separate solver just to update the error?
   }
 
   
-  for (var i = 0; i < 8; ++i) {
+  for (var i = 0; i < 32; ++i) {
     console.log(env.particles.best_error_value);
     run();
   }
