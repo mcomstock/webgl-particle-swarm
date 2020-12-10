@@ -695,6 +695,8 @@ making a separate solver just to update the error?
   var local_bests_3_copy = new Abubu.Copy(bests_out_texture_3, bests_texture_3);
   var local_bests_4_copy = new Abubu.Copy(bests_out_texture_4, bests_texture_4);
 
+  var local_bests_error_copy = new Abubu.Copy(local_bests_error_texture_out, local_bests_error_texture_in);
+
   var positions_1_copy = new Abubu.Copy(particles_out_texture_1, particles_texture_1);
   var positions_2_copy = new Abubu.Copy(particles_out_texture_2, particles_texture_2);
   var positions_3_copy = new Abubu.Copy(particles_out_texture_3, particles_texture_3);
@@ -741,6 +743,8 @@ making a separate solver just to update the error?
     local_bests_2_copy.render();
     local_bests_3_copy.render();
     local_bests_4_copy.render();
+
+    local_bests_error_copy.render();
 
     velocity_1_solver.render();
     env.velocity_update.ftinymtState.data = env.velocity_update.stinymtState.value;
