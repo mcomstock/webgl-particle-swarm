@@ -13,29 +13,8 @@ layout (location = 1) out uvec4 otinymtState;
 
 in vec2 cc;
 
-uniform vec4 lower_bounds, upper_bounds;
+uniform vec4 lower_bounds[4], upper_bounds[4];
 uniform float learning_rate;
-
-#define D0_LOWER_BOUND lower_bounds.r
-#define D1_LOWER_BOUND lower_bounds.g
-#define D2_LOWER_BOUND lower_bounds.b
-#define D3_LOWER_BOUND lower_bounds.a
-
-#define D0_UPPER_BOUND upper_bounds.r
-#define D1_UPPER_BOUND upper_bounds.g
-#define D2_UPPER_BOUND upper_bounds.b
-#define D3_UPPER_BOUND upper_bounds.a
-
-#define P0_POS positions.r
-#define P1_POS positions.g
-#define P2_POS positions.b
-#define P3_POS positions.a
-
-#define P0_VEL velocities.r
-#define P1_VEL velocities.g
-#define P2_VEL velocities.b
-#define P3_VEL velocities.a
-
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
  * tinymt.glsl  :   a glsl file to be included the in the shaders
@@ -168,20 +147,13 @@ uint tinymtBinran(float p, uint npar){
 
 
 
-float bounds_check(float p_val, float p_min, float p_max)
-{
-	float retVal;
-	if(p_val >= p_max)
-	{
+float bounds_check(float p_val, float p_min, float p_max) {
+	float retVal = p_val;
+
+	if (p_val >= p_max) {
 		retVal = p_min + (0.75 * (p_max-p_min)) * tinymtRand();
-	}
-	else if(p_val <= p_min)
-	{
+	} else if (p_val <= p_min) {
 		retVal = p_min + (0.25 * (p_max-p_min)) + (0.75 * (p_max-p_min)) * tinymtRand();
-	}
-	else
-	{
-		retVal = p_val;
 	}
 
 	return retVal;
@@ -189,21 +161,22 @@ float bounds_check(float p_val, float p_min, float p_max)
 
 void main() {
 	tinymtInit();
-    vec4 positions = texture(positions_texture, cc);
-    vec4 velocities = texture(velocities_texture, cc);
+    vec4 position = texture(positions_texture, cc);
+    vec4 velocity = texture(velocities_texture, cc);
 
-    float new_p0 = P0_POS + learning_rate * P0_VEL;
-    float new_p1 = P1_POS + learning_rate * P1_VEL;
-    float new_p2 = P2_POS + learning_rate * P2_VEL;
-    float new_p3 = P3_POS + learning_rate * P3_VEL;
+    int idx = 0;
+    if (cc.x > 0.5) idx += 1;
+    if (cc.y > 0.5) idx += 2;
 
+    vec4 my_lower_bounds = lower_bounds[idx];
+    vec4 my_upper_bounds = upper_bounds[idx];
 
-    new_p0 = bounds_check(new_p0, D0_LOWER_BOUND, D0_UPPER_BOUND);
-	new_p1 = bounds_check(new_p1, D1_LOWER_BOUND, D1_UPPER_BOUND);
-	new_p2 = bounds_check(new_p2, D2_LOWER_BOUND, D2_UPPER_BOUND);
-	new_p3 = bounds_check(new_p3, D3_LOWER_BOUND, D3_UPPER_BOUND);
+    vec4 new_pos = position + learning_rate * velocity;
 
+    for (int i = 0; i < 4; ++i) {
+        new_pos[i] = bounds_check(new_pos[i], my_lower_bounds[i], my_upper_bounds[i]);
+    }
 
-    new_position = vec4(new_p0, new_p1, new_p2, new_p3);
+    new_position = new_pos;
     tinymtReturn();
 }

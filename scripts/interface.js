@@ -9,7 +9,7 @@ define('scripts/interface', [
     static param_lists = {
       fk: ['tr', 'tsi', 'twp', 'td', 'tvp', 'tv1m', 'tv2m', 'twm', 'to', 'xk', 'ucsi', 'uc', 'uv'],
       ms: ['gna', 'gk', 'tclose', 'topen', 'vgate'],
-      fhn:['alpha','beta','eps','mu','gamma','theta','delta'],
+      fhn: ['alpha', 'beta', 'eps', 'mu', 'gamma', 'theta', 'delta'],
     }
 
     constructor() {
@@ -106,6 +106,14 @@ define('scripts/interface', [
       const file = element.querySelector('input[type=file]').files[0];
       const cl = Number(element.querySelector('input[type=text]').value);
 
+      if (cl === 0) {
+        throw new Error('No CL entered');
+      }
+
+      if (!file) {
+        throw new Error('No file found');
+      }
+
       const reader = new FileReader();
 
       const text = await new Promise((resolve) => {
@@ -113,7 +121,11 @@ define('scripts/interface', [
           resolve(reader.result);
         };
 
-        reader.readAsText(file);
+        try {
+          reader.readAsText(file);
+        } catch (e) {
+          throw new Error('Could not read file');
+        }
       });
 
       return [text, cl];
@@ -122,6 +134,7 @@ define('scripts/interface', [
     async getAllInputData() {
       const p_result = Array.from(this.data_section.children).map(async (element) => await this.getDataFromInput(element));
       const result = await Promise.all(p_result);
+
       return result;
     }
 
@@ -166,7 +179,7 @@ define('scripts/interface', [
     {
       if(new_idx != this.plotting_idx)
       {
-        var tst = Array.from(this.data_section.children);        
+        var tst = Array.from(this.data_section.children);
         tst[this.plotting_idx].querySelector('.plot-data-button').style.backgroundColor = this.default_button_bg;
         tst[new_idx].querySelector('.plot-data-button').style.backgroundColor = this.active_plot_bg;
         this.plotting_idx = new_idx;
@@ -193,13 +206,12 @@ define('scripts/interface', [
 
     displayBounds(env) {
       for (const [model, param_list] of Object.entries(PsoInterface.param_lists)) {
-        const bounds = env[model + '_bounds'].flat(1);
+        const [lb, ub] = env[model + '_bounds'];
 
         param_list.forEach((param, idx) => {
           if (this[model][param + '_fit'].checked) {
-            const [min, max] = bounds[idx];
-            this[model][param + '_min'].value = min;
-            this[model][param + '_max'].value = max;
+            this[model][param + '_min'].value = lb[idx];
+            this[model][param + '_max'].value = ub[idx];
           }
         });
       }
@@ -220,7 +232,7 @@ define('scripts/interface', [
     {
       var builder = "";
       const model = this.model_select.value;
-      PsoInterface.param_lists[model].forEach((param,idx) => 
+      PsoInterface.param_lists[model].forEach((param,idx) =>
           {
             builder = builder.concat(param + ":\t"+ this[model][param + "_val"].value + "\n");
           }
@@ -232,7 +244,7 @@ define('scripts/interface', [
     {
       var val_arr = [];
       const model = this.model_select.value;
-      PsoInterface.param_lists[model].forEach((param,idx) => 
+      PsoInterface.param_lists[model].forEach((param,idx) =>
           {
             val_arr.push(Number(this[model][param + "_val"].value));
           }
@@ -256,29 +268,16 @@ define('scripts/interface', [
     }
 
     getBounds() {
-      const bounds = [];
+      const lb = [], ub = [];
       const model = this.model_select.value;
       const param_list = PsoInterface.param_lists[model];
-      const num_colors = Math.ceil(param_list.length/4);
 
-      let c, i;
-      for (i = 0; i < param_list.length; ++i) {
-        const param = param_list[i];
-
-        if (i % 4 === 0) {
-          bounds.push([]);
-          c = i/4;
-        }
-
-        bounds[c].push([Number(this[model][param + '_min'].value), Number(this[model][param + '_max'].value)]);
+      for (const param of param_list) {
+        lb.push(Number(this[model][param + '_min'].value));
+        ub.push(Number(this[model][param + '_max'].value));
       }
 
-      // Fill out the remaining values
-      for (; i % 4 !== 0; ++i) {
-        bounds[c].push([0, 0]);
-      }
-
-      return bounds;
+      return [lb, ub];
     }
 
     setAxes(xmin, xmax, ymin, ymax) {
@@ -288,7 +287,7 @@ define('scripts/interface', [
       this.xmin.innerHTML = this.truncateString(xmin);
       this.x1.innerHTML = this.truncateString(xmin + x_quart);
       this.x2.innerHTML = this.truncateString(xmin + 2*x_quart);
-      this.x3.innerHTML = this.truncateString(xmin + 3*x_quart); 
+      this.x3.innerHTML = this.truncateString(xmin + 3*x_quart);
       this.xmax.innerHTML = this.truncateString(xmax);
 
       this.ymin.innerHTML = this.truncateString(ymin);

@@ -15,33 +15,7 @@ layout (location = 1) out uvec4 otinymtState;
 in vec2 cc;
 
 uniform float phi_local, phi_global, omega;
-uniform vec4 chi, global_best;
-
-#define P0_POS positions.r
-#define P1_POS positions.g
-#define P2_POS positions.b
-#define P3_POS positions.a
-
-#define P0_VEL velocities.r
-#define P1_VEL velocities.g
-#define P2_VEL velocities.b
-#define P3_VEL velocities.a
-
-#define P0_BEST bests.r
-#define P1_BEST bests.g
-#define P2_BEST bests.b
-#define P3_BEST bests.a
-
-#define P0_GLOBAL_BEST global_best.r
-#define P1_GLOBAL_BEST global_best.g
-#define P2_GLOBAL_BEST global_best.b
-#define P3_GLOBAL_BEST global_best.a
-
-#define P0_CHI chi.r
-#define P1_CHI chi.g
-#define P2_CHI chi.b
-#define P3_CHI chi.a
-
+uniform vec4 chi[4], global_best[4];
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
  * tinymt.glsl  :   a glsl file to be included the in the shaders
@@ -174,32 +148,21 @@ uint tinymtBinran(float p, uint npar){
 
 void main() {
     tinymtInit();
-    vec4 positions = texture(positions_texture, cc);
-    vec4 velocities = texture(velocities_texture, cc);
-    vec4 bests = texture(bests_texture, cc);
-    float r_global = tinymtRand();
-    float r_local = tinymtRand();
+    vec4 position = texture(positions_texture, cc);
+    vec4 velocity = texture(velocities_texture, cc);
+    vec4 best = texture(bests_texture, cc);
 
+    int idx = 0;
+    if (cc.x > 0.5) idx += 1;
+    if (cc.y > 0.5) idx += 2;
 
-    float new_p0 = P0_CHI * (omega*P0_VEL + phi_local * r_local * (P0_BEST - P0_POS) + phi_global * r_global * (P0_GLOBAL_BEST - P0_POS));
+    vec4 my_chi = chi[idx];
+    vec4 my_global_best = global_best[idx];
 
-    r_local = tinymtRand();
-    r_global = tinymtRand();
+    vec4 r_local = vec4(tinymtRand(), tinymtRand(), tinymtRand(), tinymtRand());
+    vec4 r_global = vec4(tinymtRand(), tinymtRand(), tinymtRand(), tinymtRand());
 
-    float new_p1 = P1_CHI * (omega*P1_VEL + phi_local * r_local * (P1_BEST - P1_POS) + phi_global * r_global * (P1_GLOBAL_BEST - P1_POS));
+    new_velocity = my_chi * (omega * velocity + phi_local * r_local * (best - position) + phi_global * r_global * (my_global_best - position));
 
-    r_local = tinymtRand();
-    r_global = tinymtRand();
-
-
-    float new_p2 = P2_CHI * (omega*P2_VEL + phi_local * r_local * (P2_BEST - P2_POS) + phi_global * r_global * (P2_GLOBAL_BEST - P2_POS));
-
-    r_local = tinymtRand();
-    r_global = tinymtRand();
-
-    float new_p3 = P3_CHI * (omega*P3_VEL + phi_local * r_local * (P3_BEST - P3_POS) + phi_global * r_global * (P3_GLOBAL_BEST - P3_POS));
-
-    // new_velocity = vec4(new_p0, new_p1, new_p2, new_p3);
-    new_velocity = vec4(new_p0, new_p1, new_p2, new_p3);
     tinymtReturn();
 }

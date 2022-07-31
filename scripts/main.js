@@ -43,7 +43,7 @@ require([
         if (pso) {
           displayGraph(idx);
         } else {
-          displayDataGraph(idx);
+          displayDataGraph(idx).catch(e => alert(e));
         }
       }
     }
@@ -88,7 +88,7 @@ require([
       pso.runOneIteration();
     }
 
-    const bestArr = pso.getGlobalBests();
+    const bestArr = pso.env.particles.global_bests;
     pso_interface.displayResults(bestArr);
     pso_interface.displayError(pso.env.particles.best_error_value);
 
@@ -109,37 +109,16 @@ require([
     graph.runGraph(actual_data, [0, 0, 0], actual_data.length, scale);
   }
 
-  function displayGraphFromVals()
-  {
+  function displayGraphFromVals() {
+    if (!pso) {
+      alert('A fit must be created before modifying the parameters');
+      return;
+    }
+
     var cl_idx = pso_interface.plotting_idx;
     let current_vals = pso_interface.get_current_values();
-    const simulation_data = pso.runManualSimulationSolver(cl_idx,current_vals);
-    const actual_data = pso.env.simulation.trimmed_data[cl_idx];
 
-    const align_index = simulation_data.findIndex(number => number > 0.15);
-    const plotting_sim_data = simulation_data.slice(align_index);
-
-    const scale = [
-      Math.min(...actual_data, ...plotting_sim_data),
-      Math.max(...actual_data, ...plotting_sim_data),
-    ];
-
-    const num_points = Math.max(actual_data.length, plotting_sim_data.length);
-    const interval = Number(pso_interface.data_sample_interval.value);
-
-    graph.clearGraph();
-    graph.runGraph(actual_data, [0, 0, 0], num_points, scale);
-    graph.runGraph(plotting_sim_data, [1, 0, 0], num_points, scale);
-
-    pso_interface.setAxes(0, num_points * interval, scale[0], scale[1]);    
-
-
-  }
-
-
-  function displayGraph(cl_idx) {
-    const simulation_data = pso.runFinalSimulationSolver(cl_idx);
-    console.log(simulation_data);
+    const simulation_data = pso.runFinalSimulationSolver(cl_idx, current_vals);
     const actual_data = pso.env.simulation.trimmed_data[cl_idx];
 
     const align_index = simulation_data.findIndex(number => number > 0.15);
@@ -160,6 +139,29 @@ require([
     pso_interface.setAxes(0, num_points * interval, scale[0], scale[1]);
   }
 
-  document.querySelector('button#PSO_button').onclick = run_pso;
+
+  function displayGraph(cl_idx) {
+    const simulation_data = pso.runFinalSimulationSolver(cl_idx);
+    const actual_data = pso.env.simulation.trimmed_data[cl_idx];
+
+    const align_index = simulation_data.findIndex(number => number > 0.15);
+    const plotting_sim_data = simulation_data.slice(align_index);
+
+    const scale = [
+      Math.min(...actual_data, ...plotting_sim_data),
+      Math.max(...actual_data, ...plotting_sim_data),
+    ];
+
+    const num_points = Math.max(actual_data.length, plotting_sim_data.length);
+    const interval = Number(pso_interface.data_sample_interval.value);
+
+    graph.clearGraph();
+    graph.runGraph(actual_data, [0, 0, 0], num_points, scale);
+    graph.runGraph(plotting_sim_data, [1, 0, 0], num_points, scale);
+
+    pso_interface.setAxes(0, num_points * interval, scale[0], scale[1]);
+  }
+
+  document.querySelector('button#PSO_button').onclick = () => run_pso().catch(e => alert(e));
   // document.querySelector('button#disp_params_button').onclick = outer_display;
 });

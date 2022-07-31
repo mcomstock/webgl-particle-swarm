@@ -3,7 +3,7 @@
 precision highp float;
 precision highp int;
 
-uniform sampler2D in_particles_1, in_particles_2, in_particles_3, in_particles_4;
+uniform sampler2D in_particles_1;
 uniform sampler2D data_texture;
 
 layout (location = 0) out vec4 error_texture;
@@ -17,37 +17,15 @@ uniform float v_init, w_init;
 uniform float align_thresh;
 uniform float sample_interval;
 
-// Macros to get the particles from the textures
-#define TR_POS particles_1.r
-#define TSI_POS particles_1.g
-#define TWP_POS particles_1.b
-#define TD_POS particles_1.a
-
-#define TVP_POS particles_2.r
-#define TV1M_POS particles_2.g
-#define TV2M_POS particles_2.b
-#define TWM_POS particles_2.a
-
-#define TO_POS particles_3.r
-#define XK_POS particles_3.g
-#define UCSI_POS particles_3.b
-#define UC_POS particles_3.a
-
-#define UV_POS particles_4.r
-
-float stim_f(const float t)
-{
+float stim_f(const float t) {
     const float stim_scale = 0.4;
     const float stim_dur = 10.0;
     const float offset_1 = 7.0;
     const float offset_2 = offset_1 * 0.96;
     const float t_scale = 0.725;
 
-    // return ( -stim_scale * ( t / t_scale - offset_1) / pow(1.0 + (t/t_scale - offset_2) , 4.0) );
     return ( -stim_scale * ( t / t_scale - offset_1) / (1.0 + pow((t/t_scale - offset_2) , 4.0) ) );
-
 }
-
 
 void main() {
     // PSO derived parameters
@@ -60,11 +38,30 @@ void main() {
 
     const float stim_dur = 10.0;
 
-    // Get the relevant color from each texture
-    vec4 particles_1 = texture(in_particles_1, cc);
-    vec4 particles_2 = texture(in_particles_2, cc);
-    vec4 particles_3 = texture(in_particles_3, cc);
-    vec4 particles_4 = texture(in_particles_4, cc);
+    ivec2 tex_size = textureSize(in_particles_1, 0);
+    ivec2 idx = ivec2(floor(cc * 0.5 * vec2(tex_size)));
+
+    vec4 particles_1 = texelFetch(in_particles_1, idx, 0);
+    vec4 particles_2 = texelFetch(in_particles_1, idx + ivec2(tex_size.x/2, 0), 0);
+    vec4 particles_3 = texelFetch(in_particles_1, idx + ivec2(0, tex_size.y/2), 0);
+    vec4 particles_4 = texelFetch(in_particles_1, idx + ivec2(tex_size.x/2, tex_size.y/2), 0);
+
+    float tr = particles_1.r;
+    float tsi = particles_1.g;
+    float twp = particles_1.b;
+    float td = particles_1.a;
+
+    float tvp = particles_2.r;
+    float tv1m = particles_2.g;
+    float tv2m = particles_2.b;
+    float twm = particles_2.a;
+
+    float to = particles_3.r;
+    float xk = particles_3.g;
+    float ucsi = particles_3.b;
+    float uc = particles_3.a;
+
+    float uv = particles_4.r;
 
     // Initialize values for the simulation
     float u = 0.0;
@@ -73,8 +70,7 @@ void main() {
 
     float compare_stride = round(sample_interval / dt);
 
-    float error = 0.0;
-    error = 10000000000.0;
+    float error = 10000000000.0;
 
     int data_index = 0;
 
@@ -84,61 +80,51 @@ void main() {
 
     // Run the simulation with the current swarm parameters
     for (int step_count = 1; step_count <= num_steps; ++step_count) {
-        float p = u >= UC_POS ? 1.0 : 0.0;
-        float q = u >= UV_POS ? 1.0 : 0.0;
+        float p = u >= uc ? 1.0 : 0.0;
+        float q = u >= uv ? 1.0 : 0.0;
 
         float dv =
             // p false
             (1.0 - p)*(1.0 - v) / (
                 // q false
-                (1.0 - q)*TV1M_POS
+                (1.0 - q)*tv1m
                 // q true
-                + q*TV2M_POS
+                + q*tv2m
                 )
             // p true
-            - p*(v/TVP_POS);
+            - p*(v/tvp);
 
         float dw =
             // p false
-            (1.0-p)*(1.0-w) / TWM_POS
+            (1.0-p)*(1.0-w) / twm
             // p true
-            - p*(w/TWP_POS);
+            - p*(w/twp);
 
         v += dt*dv;
         w += dt*dw;
 
         float jfi =
             // p true
-            p * -v * (u - UC_POS)*(1.0-u)/TD_POS;
+            p * -v * (u - uc)*(1.0-u)/td;
 
         float jso =
             // p false
-            (1.0 - p)*u / TO_POS
+            (1.0 - p)*u / to
             // p true
-            + p/TR_POS;
+            + p/tr;
 
-        float jsi = -w * (1.0 + tanh(XK_POS * (u-UCSI_POS))) / (2.0 * TSI_POS);
+        float jsi = -w * (1.0 + tanh(xk * (u-ucsi))) / (2.0 * tsi);
 
         // Apply stimulus
-        // float stim = 0.0;
-        // if (mod(float(step_count), period/dt) > stim_start/dt && mod(float(step_count), period/dt) < stim_end/dt) {
-        //     stim = stim_mag;
-        // }
-
         float stim = 0.0;
         float stim_step = mod(float(step_count), period/dt);
-        if(stim_step < stim_dur/dt)
-        {
+        if (stim_step < stim_dur/dt) {
             stim = stim_f(stim_step * dt);
         }
 
-
-
-
         u -= (jfi+jso+jsi-stim)*dt;
 
-        if(step_count > pre_pace_steps && !first_upstroke && u > align_thresh)
-        {
+        if (step_count > pre_pace_steps && !first_upstroke && u > align_thresh) {
             first_upstroke = true;
             start_comp = step_count;
             error = 0.0;
@@ -152,7 +138,7 @@ void main() {
             error += (u - actual)*(u - actual);
         }
 
-        if (float( (step_count - pre_pace_steps) - 1) / float((num_steps - pre_pace_steps) - 1) <= cc.x) {
+        if (float((step_count - pre_pace_steps) - 1) / float((num_steps - pre_pace_steps) - 1) <= cc.x) {
             saved_value = u;
         }
     }

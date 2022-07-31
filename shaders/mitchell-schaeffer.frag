@@ -3,7 +3,7 @@
 precision highp float;
 precision highp int;
 
-uniform sampler2D in_particles_1, in_particles_2;
+uniform sampler2D in_particles_1;
 uniform sampler2D data_texture;
 
 layout (location = 0) out vec4 error_texture;
@@ -38,9 +38,11 @@ void main() {
 
     const float stim_dur = 10.0;
 
-    // Get the relevant color from each texture
-    vec4 particles_1 = texture(in_particles_1, cc);
-    vec4 particles_2 = texture(in_particles_2, cc);
+    ivec2 tex_size = textureSize(in_particles_1, 0);
+    ivec2 idx = ivec2(floor(cc * 0.5 * vec2(tex_size)));
+
+    vec4 particles_1 = texelFetch(in_particles_1, idx, 0);
+    vec4 particles_2 = texelFetch(in_particles_1, idx + ivec2(tex_size.x/2, 0), 0);
 
     float gna = particles_1.r;
     float gk = particles_1.g;
@@ -55,8 +57,7 @@ void main() {
 
     float compare_stride = round(sample_interval / dt);
 
-    float error = 0.0;
-    error = 10000000000.0;
+    float error = 10000000000.0;
 
     int data_index = 0;
 

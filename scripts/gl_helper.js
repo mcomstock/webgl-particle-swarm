@@ -211,6 +211,38 @@ define('scripts/gl_helper', [], function() {
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
     }
 
+    runBigProgram(gl_helper, framebuffer, program, uniforms, locations, out_textures) {
+      const gl = gl_helper.gl;
+      const canvas = gl_helper.canvas;
+
+      const old_width = canvas.width;
+      const old_height = canvas.height;
+
+      canvas.width = 2*old_width;
+      canvas.height = 2*old_height;
+
+      gl.viewport(0, 0, canvas.width, canvas.height);
+
+      gl.useProgram(program);
+      gl_helper.setUniforms(uniforms, locations);
+
+      const draw_buffers = gl_helper.attachTextures(framebuffer, out_textures);
+
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebuffer);
+      gl.drawBuffers(draw_buffers);
+
+      gl_helper.useDefaultVertexBuffer(program);
+
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+
+      canvas.width = old_width;
+      canvas.height = old_height;
+
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+
     runSimulation(gl_helper, framebuffer, program, uniforms, locations, out_textures, cl_idx, clear) {
       const gl = gl_helper.gl;
 
@@ -247,8 +279,8 @@ define('scripts/gl_helper', [], function() {
       const gl = gl_helper.gl;
       const canvas = gl_helper.canvas;
 
-      const old_width = this.canvas_width;
-      const old_height = this.canvas_height;
+      const old_width = canvas.width;
+      const old_height = canvas.height;
 
       canvas.width = simulation_length;
       canvas.height = 1;
@@ -307,8 +339,8 @@ define('scripts/gl_helper', [], function() {
           case '1i':
             gl.uniform1i(locations[i], uniforms[i][2](...uniformArgs));
             break;
-          case '4fv':
-            gl.uniform4fv(locations[i], uniforms[i][2](...uniformArgs));
+          case '4fv_a':
+            gl.uniform4fv(locations[i], ...uniforms[i][2](...uniformArgs));
             break;
           case 'tex':
             gl.activeTexture(gl['TEXTURE'+String(texnum)]);
