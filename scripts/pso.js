@@ -12,7 +12,7 @@ define('scripts/pso', [
   'text!shaders/update_velocities.frag',
   'text!shaders/update_particles.frag',
   'text!shaders/update_local_bests.frag',
-  // 'text!shaders/round_float.frag',
+  'text!shaders/round_float.frag',
   'text!shaders/hector_fhn.frag',
 ], function(
   GlHelper,
@@ -27,7 +27,7 @@ define('scripts/pso', [
   UpdateVelocitiesShader,
   UpdateParticlesShader,
   UpdateLocalBestsShader,
-  // RoundFloatShader,
+  RoundFloatShader,
   HectorFHNShader,
 ) {
   'use strict';
@@ -562,9 +562,6 @@ define('scripts/pso', [
       program_map.reduce_error_2();
 
       program_map.expand_error();
-
-      const arr = new Float32Array(this.tex_width*this.tex_height*4);
-      this.gl_helper.getFloatTextureArray(this.expanded_error_texture, this.tex_width, this.tex_height, arr);
 
       this.updateGlobalBest();
 
