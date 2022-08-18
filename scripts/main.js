@@ -1,4 +1,3 @@
-/* global require */
 require([
   'scripts/graph',
   'scripts/interface',
@@ -43,7 +42,7 @@ require([
         if (pso) {
           displayGraph(idx);
         } else {
-          displayDataGraph(idx).catch(e => alert(e));
+          displayDataGraph(idx).catch(err => alert(err));
         }
       }
     }
@@ -51,10 +50,6 @@ require([
 
   // Start with a single data file input
   pso_interface.addInput();
-
-  const outer_display = () => {
-    pso_interface.display_all_params(pso_interface);
-  };
 
   const run_pso = async () => {
     pso = new Pso(particles_width, particles_height);
@@ -115,8 +110,8 @@ require([
       return;
     }
 
-    var cl_idx = pso_interface.plotting_idx;
-    let current_vals = pso_interface.get_current_values();
+    const cl_idx = pso_interface.plotting_idx;
+    const current_vals = pso_interface.get_current_values();
 
     const simulation_data = pso.runFinalSimulationSolver(cl_idx, current_vals);
     const actual_data = pso.env.simulation.trimmed_data[cl_idx];
@@ -163,5 +158,4 @@ require([
   }
 
   document.querySelector('button#PSO_button').onclick = () => run_pso().catch(e => alert(e));
-  // document.querySelector('button#disp_params_button').onclick = outer_display;
 });

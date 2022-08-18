@@ -1,16 +1,14 @@
-/* global define */
 define('scripts/interface', [
 ], function(
 ) {
   'use strict';
 
-  /* global PsoInterface */
   return class PsoInterface {
     static param_lists = {
       fk: ['tr', 'tsi', 'twp', 'td', 'tvp', 'tv1m', 'tv2m', 'twm', 'to', 'xk', 'ucsi', 'uc', 'uv'],
       ms: ['gna', 'gk', 'tclose', 'topen', 'vgate'],
       fhn: ['alpha', 'beta', 'eps', 'mu', 'gamma', 'theta', 'delta'],
-    }
+    };
 
     constructor() {
       for (const [model, param_list] of Object.entries(PsoInterface.param_lists)) {
@@ -156,13 +154,11 @@ define('scripts/interface', [
       plot_button.setAttribute('class', 'plot-data-button');
       plot_button.innerHTML = 'Plot';
 
-      if(this.default_button_bg == null)
-      {
+      if (this.default_button_bg === null) {
         this.default_button_bg = plot_button.style.backgroundColor;
       }
 
-      if(this.plotting_idx < 0)
-      {
+      if (this.plotting_idx < 0) {
         this.plotting_idx = 0;
         plot_button.style.backgroundColor = this.active_plot_bg;
       }
@@ -175,19 +171,16 @@ define('scripts/interface', [
       return elem;
     }
 
-    update_plot_idx(new_idx)
-    {
-      if(new_idx != this.plotting_idx)
-      {
-        var tst = Array.from(this.data_section.children);
+    update_plot_idx(new_idx) {
+      if (new_idx !== this.plotting_idx) {
+        const tst = Array.from(this.data_section.children);
         tst[this.plotting_idx].querySelector('.plot-data-button').style.backgroundColor = this.default_button_bg;
         tst[new_idx].querySelector('.plot-data-button').style.backgroundColor = this.active_plot_bg;
         this.plotting_idx = new_idx;
       }
     }
 
-    get_plot_idx()
-    {
+    get_plot_idx() {
       return this.plotting_idx;
     }
 
@@ -228,34 +221,27 @@ define('scripts/interface', [
       });
     }
 
-    display_all_params_test()
-    {
-      var builder = "";
+    display_all_params_test() {
+      let builder = "";
       const model = this.model_select.value;
-      PsoInterface.param_lists[model].forEach((param,idx) =>
-          {
-            builder = builder.concat(param + ":\t"+ this[model][param + "_val"].value + "\n");
-          }
-        );
+      PsoInterface.param_lists[model].forEach((param) => {
+        builder = builder.concat(param + ":\t"+ this[model][param + "_val"].value + "\n");
+      });
       prompt("(ctrl+c, Enter) to copy:",builder);
     }
 
-    get_current_values()
-    {
-      var val_arr = [];
+    get_current_values() {
+      const val_arr = [];
       const model = this.model_select.value;
-      PsoInterface.param_lists[model].forEach((param,idx) =>
-          {
-            val_arr.push(Number(this[model][param + "_val"].value));
-          }
-        );
+      PsoInterface.param_lists[model].forEach((param) => {
+        val_arr.push(Number(this[model][param + "_val"].value));
+      });
       return val_arr;
     }
 
 
-    display_all_params(real_interface)
-    {
-      var builder = "";
+    display_all_params() {
+      let builder = "";
       PsoInterface.param_lists[this.model_select.value].forEach(param => {
         builder = builder.concat(param + ":\t" + this[param + '_val'].value +"\n");
       });
@@ -303,9 +289,9 @@ define('scripts/interface', [
       // If there is no decimal, do nothing
       if (str_array.length <= 1) {
         return str;
-      } else {
-        return str_array[0] + '.' + str_array[1].slice(0, 2);
       }
+
+      return str_array[0] + '.' + str_array[1].slice(0, 2);
     }
   };
 });

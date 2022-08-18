@@ -1,0 +1,57 @@
+---
+root: true
+env:
+  browser: true
+  es2022: true
+  amd: true
+extends:
+  - eslint:recommended
+rules:
+  no-use-before-define:
+    - warn
+    - functions: false
+      classes: true
+      variables: true
+      allowNamedExports: true
+  block-scoped-var: warn
+  consistent-return: warn
+  eqeqeq: warn
+  no-else-return: warn
+  no-eq-null: warn
+  no-implicit-globals: warn
+  no-invalid-this: warn
+  no-shadow: warn
+  no-unused-expressions: warn
+  no-var: warn
+  prefer-const: warn
+  strict: warn
+  brace-style:
+    - warn
+    - 1tbs
+    - allowSingleLine: true
+  comma-dangle:
+    - warn
+    - always-multiline
+  func-call-spacing: warn
+  key-spacing:
+    - warn
+    - beforeColon: false
+      afterColon: true
+      mode: minimum
+  keyword-spacing: warn
+  eol-last: warn
+  indent:
+    - warn
+    - 2
+    - SwitchCase: 1
+  linebreak-style: warn
+  no-tabs: warn
+  no-trailing-spaces: warn
+  semi: warn
+  semi-style: warn
+  space-before-blocks: warn
+  space-before-function-paren:
+    - warn
+    - anonymous: never
+      arrow: never
+      asyncArrow: always

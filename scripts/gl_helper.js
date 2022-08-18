@@ -1,4 +1,3 @@
-/* global define */
 define('scripts/gl_helper', [], function() {
   'use strict';
 
@@ -87,7 +86,7 @@ define('scripts/gl_helper', [], function() {
       gl.attachShader(shaderProgram, fragmentShader);
       gl.linkProgram(shaderProgram);
 
-      if(!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+      if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
         alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
         return null;
       }

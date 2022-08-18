@@ -1,4 +1,3 @@
-/* global define */
 define('scripts/pso', [
   'scripts/gl_helper',
   'text!shaders/copy.frag',
@@ -32,7 +31,6 @@ define('scripts/pso', [
 ) {
   'use strict';
 
-  /* global Pso */
   return class Pso {
     constructor(particles_width, particles_height) {
       this.particles_width = particles_width;
@@ -48,7 +46,7 @@ define('scripts/pso', [
       this.gl_helper = new GlHelper(canvas);
     }
 
-    static getEnv(model) {
+    static getEnv() {
       const env = {
         simulation: {
           model: 'fk',
@@ -112,7 +110,7 @@ define('scripts/pso', [
         env.simulation.pre_beats = Number(pre_beats);
       }
 
-      if(Number(sample_interval)) {
+      if (Number(sample_interval)) {
         env.simulation.sample_interval = Number(sample_interval);
       }
 
@@ -156,9 +154,9 @@ define('scripts/pso', [
         const split_data = raw_text.split('\n');
         const actual_data = split_data.filter(x => !(x.trim() === ""));
 
-        let full_parsed_data = actual_data.map(x => parseFloat(x.trim()));
-        let maxVal = Math.max(...full_parsed_data);
-        let full_normalized_data = full_parsed_data.map(x => (x * (normalization / maxVal)));
+        const full_parsed_data = actual_data.map(x => parseFloat(x.trim()));
+        const maxVal = Math.max(...full_parsed_data);
+        const full_normalized_data = full_parsed_data.map(x => (x * (normalization / maxVal)));
 
         const first_compare_index = full_normalized_data.findIndex(number => number > 0.15);
 
@@ -226,7 +224,7 @@ define('scripts/pso', [
       this.data_textures = [];
 
       console.log("Period length is "+period.length);
-      for (var i = 0; i < period.length; i++) {
+      for (let i = 0; i < period.length; i++) {
         this.simulation_lengths.push(Math.ceil(Math.ceil(num_beats * period[i]) / sample_interval));
         this.data_textures.push(gl_helper.loadFloatTexture(data_arrays[i].length/4, 1, data_arrays[i]));
       }
@@ -396,8 +394,7 @@ define('scripts/pso', [
       const makeRunSimulationSolver = (final) => {
 
         let model_frag;
-        switch(String(this.env.simulation.model))
-        {
+        switch (String(this.env.simulation.model)) {
           case 'fk':
             model_frag = RunSimulationShader;
             break;
@@ -514,7 +511,7 @@ define('scripts/pso', [
 
       this.gl_helper.initDefaultVertexBuffer();
 
-      for (let key in shader_map) {
+      for (const key in shader_map) {
         program_map[key] = this.gl_helper.setupDefault(shader_map[key], this);
       }
 
@@ -624,7 +621,7 @@ define('scripts/pso', [
 
       const parameter_values = values || this.env.particles.global_bests;
 
-      while (parameter_values.length % 16 != 0) {
+      while (parameter_values.length % 16 !== 0) {
         parameter_values.push(0);
       }
 

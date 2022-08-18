@@ -1,4 +1,3 @@
-/* global define */
 define('scripts/graph', [
   'text!shaders/graph.vert',
   'text!shaders/graph.frag',
