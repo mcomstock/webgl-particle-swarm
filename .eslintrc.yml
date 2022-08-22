@@ -53,5 +53,5 @@ rules:
   space-before-function-paren:
     - warn
     - anonymous: never
-      arrow: never
+      named: never
       asyncArrow: always
