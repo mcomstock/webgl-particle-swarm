@@ -313,6 +313,9 @@ define('scripts/pso', [
 
       // Initialize all global best values to 0
       env.particles.global_bests = env.particles.lower_bounds.map(() => 0);
+
+      env.particles.particle_count = this.particles_width * this.particles_height;
+      env.particles.iteration_count = hyperparams.iteration_count;
     }
 
     normalizeData(parsed_data, normalize) {
