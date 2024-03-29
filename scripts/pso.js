@@ -350,7 +350,7 @@ define('scripts/pso', [
       const align_thresh = [];
       const all_full_normalized_data = [];
 
-      const normalization = Number(normalize) || 1;
+      const normalization = Number(normalize) === 0 ? 0 : Number(normalize) || 1;
       this.env.simulation.normalization = normalization;
       const delta = 0.001;
 
@@ -374,7 +374,7 @@ define('scripts/pso', [
           const actual_data = split_data.filter(x => !(x.trim() === ""));
 
           const full_parsed_data = actual_data.map(x => parseFloat(x.trim()));
-          const full_normalized_data = this.normalizeData(full_parsed_data, normalization);
+          const full_normalized_data = normalization ? this.normalizeData(full_parsed_data, normalization) : full_parsed_data;
 
           const first_compare_index = full_normalized_data.findIndex(number => number > 0.15);
 
