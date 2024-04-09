@@ -5,6 +5,7 @@ precision highp int;
 
 uniform sampler2D in_particles_1, in_particles_2, in_particles_3;
 uniform sampler2D data_texture;
+uniform sampler2D var_init_texture;
 
 layout (location = 0) out vec4 error_texture;
 
@@ -108,11 +109,12 @@ void main() {
     float wcp = particles_10.g;
     float winfstar = particles_10.b;
 
-    // Initialize values for the simulation
-    float u = 0.0;
-    float v = 1.0;
-    float w = 1.0;
-    float s = 0.0;
+    vec4 var_init = texture(var_init_texture, cc);
+
+    float u = var_init[0];
+    float v = var_init[1];
+    float w = var_init[2];
+    float s = var_init[3];
 
     float uNew;
 

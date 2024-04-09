@@ -74,9 +74,6 @@ define('scripts/pso', [
           period: [],
           num_beats: 1,
           pre_beats: 4,
-          v_init: 1.0,
-          w_init: 1.0,
-          h_init: 1.0,
           align_thresh: [],
           trimmed_data: [],
           data_arrays: [],
@@ -444,6 +441,14 @@ define('scripts/pso', [
 
       const global_best_array = new Float32Array(16);
 
+      const var_init_array = new Float32Array(tex_width*tex_height*4);
+      for (let i = 0; i < tex_width*tex_height; ++i) {
+        var_init_array[i] = 0.0;
+        var_init_array[i+1] = this.env.simulation.model === 'fhn' ? 0.0 : 1.0;
+        var_init_array[i+2] = 1.0;
+        var_init_array[i+3] = 0.0;
+      }
+
       this.simulation_lengths = [];
       this.data_textures = [];
 
@@ -460,6 +465,7 @@ define('scripts/pso', [
       this.velocities_out_textures = [];
       this.bests_out_textures = [];
       this.global_best_out_textures = [];
+      this.var_init_textures = []
 
       for (const init_array of init_arrays) {
         this.particles_textures.push(gl_helper.loadFloatTexture(tex_width, tex_height, init_array));
@@ -470,6 +476,7 @@ define('scripts/pso', [
         this.velocities_out_textures.push(gl_helper.loadFloatTexture(tex_width, tex_height, null));
         this.bests_out_textures.push(gl_helper.loadFloatTexture(tex_width, tex_height, null));
         this.global_best_out_textures.push(gl_helper.loadFloatTexture(2, 2, null));
+        this.var_init_textures.push(gl_helper.loadFloatTexture(tex_width, tex_height, var_init_array));
       }
 
       // The error textures are used to reduce the error quantities of each particles from each
@@ -674,6 +681,7 @@ define('scripts/pso', [
           frag: model_frag,
           uniforms: [
             ['data_texture', 'tex', (cl_idx) => this.data_textures[cl_idx]],
+            ['var_init_texture', 'tex', (cl_idx) => this.var_init_textures[cl_idx]],
             ['dt', '1f', () => this.env.simulation.dt],
             ['period', '1f', (cl_idx) => this.env.simulation.period[cl_idx]],
             ['stim_dur', '1f', () => this.env.stimulus.stim_dur],
@@ -700,13 +708,6 @@ define('scripts/pso', [
           } else {
             solver.uniforms.push(['in_particles_' + (i+1), 'tex', () => this.particles_textures[i]]);
           }
-        }
-
-        if (this.env.simulation.model === 'ms') {
-          solver.uniforms.push(['h_init', '1f', () => this.env.simulation.h_init]);
-        } else {
-          solver.uniforms.push(['v_init', '1f', () => this.env.simulation.v_init]);
-          solver.uniforms.push(['w_init', '1f', () => this.env.simulation.w_init]);
         }
 
         return solver;

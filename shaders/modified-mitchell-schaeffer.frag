@@ -5,6 +5,7 @@ precision highp int;
 
 uniform sampler2D in_particles_1;
 uniform sampler2D data_texture;
+uniform sampler2D var_init_texture;
 
 layout (location = 0) out vec4 error_texture;
 
@@ -12,7 +13,6 @@ in vec2 cc;
 
 uniform float dt, period;
 uniform int num_beats, pre_beats, data_type;
-uniform float h_init;
 uniform float align_thresh, sample_interval, apd_thresh, weight;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
 uniform bool stim_biphasic;
@@ -49,8 +49,10 @@ void main() {
     float topen = particles_1[3];
     float vgate = particles_2[0];
 
-    float v = 0.0;
-    float h = h_init;
+    vec4 var_init = texture(var_init_texture, cc);
+
+    float v = var_init[0];
+    float h = var_init[1];
     float jin, jout, dv, dh;
 
     float compare_stride = round(sample_interval / dt);

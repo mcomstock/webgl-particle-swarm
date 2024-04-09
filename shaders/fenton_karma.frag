@@ -5,6 +5,7 @@ precision highp int;
 
 uniform sampler2D in_particles_1;
 uniform sampler2D data_texture;
+uniform sampler2D var_init_texture;
 
 layout (location = 0) out vec4 error_texture;
 
@@ -65,10 +66,11 @@ void main() {
 
     float uv = particles_4.r;
 
-    // Initialize values for the simulation
-    float u = 0.0;
-    float v = v_init;
-    float w = w_init;
+    vec4 var_init = texture(var_init_texture, cc);
+
+    float u = var_init[0];
+    float v = var_init[1];
+    float w = var_init[2];
 
     float compare_stride = round(sample_interval / dt);
 
