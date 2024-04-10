@@ -136,20 +136,10 @@ require([
   // Start with a single data file input
   pso_interface.addInput();
 
-  let iteration_params = {};
-  let iteration_error = {};
-  let iteration_velocities = {};
-
   const run_pso = async () => {
     const hyperparams = pso_interface.getHyperparams();
     pso = new Pso(hyperparams.particle_count);
     const input_data = await pso_interface.getAllInputData();
-
-    iteration_params = {};
-    iteration_error = {};
-    iteration_velocities = {};
-
-    const start_time = Date.now();
 
     pso.setupEnv(
       pso_interface.model_select.value,
@@ -166,15 +156,20 @@ require([
     pso.initializeTextures();
     pso.setupAllSolvers();
 
-    const best_error_list = [];
-    runPsoIterations(0, hyperparams.iteration_count, best_error_list, start_time);
+    runPsoIterations(hyperparams.iteration_count);
   };
 
-  async function runPsoIterations(iter, iter_count, best_error_list, start_time) {
-    pso_interface.updateStatusDisplay(iter, iter_count);
+  async function runPsoIterations(iteration_count) {
+    const start_time = Date.now();
+    const best_error_list = [];
 
-    if (iter < iter_count) {
-      pso.runOneIteration();
+    const iteration_params = {};
+    const iteration_error = {};
+    const iteration_velocities = {};
+
+    for (let iter = 0; iter < iteration_count; ++iter) {
+      pso_interface.updateStatusDisplay(iter, iteration_count);
+      await pso.runOneIteration();
 
       if (dump_convergence) {
         pso.capture_parameters(iteration_params,iter);
@@ -183,20 +178,21 @@ require([
       }
 
       best_error_list.push(pso.env.particles.best_error_value);
-      window.requestAnimationFrame(() => runPsoIterations(iter+1, iter_count, best_error_list, start_time));
-    } else {
-      finalizePso(start_time, best_error_list);
+    }
 
-      if (save_error) {
-        const filename = `pso_error_${pso.env.simulation.model}_${pso.particles_width*pso.particles_height}_${iter_count}_${Date.now()}.txt`;
-        save_output([best_error_list.join('\n')], filename);
-      }
+    pso_interface.updateStatusDisplay(iteration_count, iteration_count);
 
-      if (dump_convergence) {
-        save_output([JSON.stringify(iteration_params)], `convergence_data.json`);
-        save_output([JSON.stringify(iteration_error)], `error_data.json`);
-        save_output([JSON.stringify(iteration_velocities)], `velocity_data.json`);
-      }
+    finalizePso(start_time, best_error_list);
+
+    if (save_error) {
+      const filename = `pso_error_${pso.env.simulation.model}_${pso.particles_width*pso.particles_height}_${iteration_count}_${Date.now()}.txt`;
+      save_output([best_error_list.join('\n')], filename);
+    }
+
+    if (dump_convergence) {
+      save_output([JSON.stringify(iteration_params)], `convergence_data.json`);
+      save_output([JSON.stringify(iteration_error)], `error_data.json`);
+      save_output([JSON.stringify(iteration_velocities)], `velocity_data.json`);
     }
   }
 

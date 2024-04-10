@@ -847,55 +847,72 @@ define('scripts/pso', [
       param_arrays_map[itr] = cur_error;
     }
 
-    runOneIteration() {
+    async runOneIteration() {
       const program_map = this.program_map;
+      const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
 
       for (let i = 0; i < this.env.simulation.period.length; ++i) {
+        await nextframe();
         program_map.run_simulation(i, i === 0);
       }
 
+      await nextframe();
       program_map.reduce_error_1();
+      await nextframe();
       program_map.reduce_error_2();
 
+      await nextframe();
       program_map.expand_error();
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
+        await nextframe();
         program_map['global_best_update_' + i]();
       }
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
+        await nextframe();
         program_map['global_best_copy_' + i]();
       }
 
+      await nextframe();
       program_map.best_error_value_copy();
 
       this.updateGlobalBest();
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
+        await nextframe();
         program_map['local_best_update_' + i]();
       }
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
+        await nextframe();
         program_map['local_bests_copy_' + i]();
       }
 
+      await nextframe();
       program_map.local_error_copy();
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
+        await nextframe();
         program_map['velocity_' + i]();
+        await nextframe();
         program_map.tinymt_copy();
       }
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
+        await nextframe();
         program_map['velocities_copy_' + i]();
       }
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
+        await nextframe();
         program_map['position_' + i]();
+        await nextframe();
         program_map.tinymt_copy();
       }
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
+        await nextframe();
         program_map['positions_copy_' + i]();
       }
     }
