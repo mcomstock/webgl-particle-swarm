@@ -773,6 +773,22 @@
       <input id="hyperparam_chi" type="number" min="0" value="0.73" step="0.01">
     </div>
 
-    <canvas id="error_canvas" width="256" height="256"></canvas>
+    <div id="error_graph_div">
+      <div id="error_yaxis">
+        <span id="error_ymax"></span>
+        <span id="error_ymin" class="auto-vertical"></span>
+      </div>
+
+      <canvas id="error_canvas" width="256" height="256"></canvas>
+
+      <div id="error_xaxis">
+        <span id="error_xmin"></span>
+        <span id="error_xmax" class="auto-horizontal"></span>
+      </div>
+
+      <div id="error_xlabel">
+        <span>Iteration</span>
+      </div>
+    </div>
   </body>
 </html>

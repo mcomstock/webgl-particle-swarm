@@ -201,8 +201,11 @@ require([
     pso_interface.displayResults(bestArr);
     pso_interface.displayError(pso.env.particles.best_error_value);
 
+    const errmin = Math.min(...best_error_list);
+    const errmax = Math.max(...best_error_list);
     error_graph.clearGraph();
-    error_graph.runGraph(best_error_list, [0, 0, 0], best_error_list.length, [Math.min(...best_error_list), Math.max(...best_error_list)]);
+    error_graph.runGraph(best_error_list, [0, 0, 0], best_error_list.length, [errmin, errmax]);
+    pso_interface.setErrorAxes(1, best_error_list.length, errmin, errmax);
 
     displayGraph(pso_interface.plotting_idx);
 

@@ -96,6 +96,11 @@ define('scripts/interface', [
       this.y2 = document.getElementById('y2');
       this.y3 = document.getElementById('y3');
       this.ymax = document.getElementById('ymax');
+
+      this.error_xmin = document.getElementById('error_xmin');
+      this.error_xmax = document.getElementById('error_xmax');
+      this.error_ymin = document.getElementById('error_ymin');
+      this.error_ymax = document.getElementById('error_ymax');
     }
 
     updateStatusDisplay(current, total) {
@@ -375,7 +380,6 @@ define('scripts/interface', [
     }
 
     displayError(error) {
-      // this.fit_error.innerHTML = this.truncateString(error);
       this.fit_error.innerHTML = (Number.parseFloat(error).toPrecision(4)).toString();
     }
 
@@ -425,6 +429,13 @@ define('scripts/interface', [
       this.y2.innerHTML = this.truncateString(ymin + 2*y_quart);
       this.y3.innerHTML = this.truncateString(ymin + 3*y_quart);
       this.ymax.innerHTML = this.truncateString(ymax);
+    }
+
+    setErrorAxes(xmin, xmax, ymin, ymax) {
+      this.error_xmin.innerHTML = String(xmin);
+      this.error_xmax.innerHTML = String(xmax);
+      this.error_ymin.innerHTML = Number.parseFloat(ymin).toPrecision(4).toString();
+      this.error_ymax.innerHTML = Number.parseFloat(ymax).toPrecision(4).toString();
     }
 
     truncateString(num) {
