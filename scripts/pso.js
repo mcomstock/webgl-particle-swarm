@@ -50,6 +50,8 @@ define('scripts/pso', [
         dim = 32;
       else if (particle_count <= 4096)
         dim = 64;
+      else if (particle_count <= 16384)
+        dim = 128;
       else
         dim = 256;
 
