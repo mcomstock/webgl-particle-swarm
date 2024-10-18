@@ -5,8 +5,8 @@ precision highp int;
 precision highp isampler2D ;
 precision highp usampler2D ;
 
-uniform sampler2D positions_texture, velocities_texture, bests_texture, global_best_texture;
-uniform usampler2D  itinymtState, itinymtMat;
+uniform sampler2D positions_texture, velocities_texture, bests_texture;
+uniform usampler2D topological_best_idx_texture, itinymtState, itinymtMat;
 
 layout (location = 0) out vec4 new_velocity;
 layout (location = 1) out uvec4 otinymtState;
@@ -149,16 +149,23 @@ void main() {
     vec4 position = texture(positions_texture, cc);
     vec4 velocity = texture(velocities_texture, cc);
     vec4 best = texture(bests_texture, cc);
-    vec4 global_best = texture(global_best_texture, cc);
 
-    int idx = 0;
-    if (cc.x > 0.5) idx += 1;
-    if (cc.y > 0.5) idx += 2;
+    ivec2 particle_dims = textureSize(topological_best_idx_texture, 0);
+    ivec2 my_particle_idx = ivec2(floor(cc*vec2(particle_dims)));
+    ivec2 topological_best_idx = ivec2(texelFetch(topological_best_idx_texture, my_particle_idx, 0).xy);
+
+    ivec2 texture_dims = textureSize(bests_texture, 0);
+    ivec2 my_texture_idx = ivec2(floor(cc*vec2(texture_dims)));
+
+    if (my_texture_idx.x >= particle_dims.x) topological_best_idx.x += particle_dims.x;
+    if (my_texture_idx.y >= particle_dims.y) topological_best_idx.y += particle_dims.y;
+
+    vec4 topological_best = texelFetch(bests_texture, topological_best_idx, 0);
 
     vec4 r_local = vec4(tinymtRand(), tinymtRand(), tinymtRand(), tinymtRand());
     vec4 r_global = vec4(tinymtRand(), tinymtRand(), tinymtRand(), tinymtRand());
 
-    new_velocity = chi * (omega * velocity + (phi_local * r_local * (best - position) + phi_global * r_global * (global_best - position)));
+    new_velocity = chi * (omega * velocity + (phi_local * r_local * (best - position) + phi_global * r_global * (topological_best - position)));
 
     tinymtReturn();
 }
