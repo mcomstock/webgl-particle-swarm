@@ -491,6 +491,8 @@ define('scripts/pso', [
       this.reduced_error_1_texture = gl_helper.loadFloatTexture(particles_width, 1, null);
       this.reduced_error_2_texture = gl_helper.loadFloatTexture(1, 1, null);
 
+      this.topological_best_idx_texture = gl_helper.loadUintTexture(particles_width, particles_height, null);
+
       // These need to be 2x2 to match the global best texture
       const best_error_value_array = new Float32Array(16);
       best_error_value_array[0] = this.env.particles.best_error_value;
@@ -573,6 +575,19 @@ define('scripts/pso', [
           out: [this.bests_out_textures[num], this.local_bests_error_texture_out],
           run: this.gl_helper.runProgram,
           dims: [this.tex_width, this.tex_height],
+        };
+      };
+
+      const makeUpdateTopologicalBestsCompleteSolver = (num) => {
+        return {
+          vert: DefaultVertexShader,
+          frag: UpdateTopologicalBestsCompleteShader,
+          uniforms: [
+            ['reduced_error_2_texture', 'tex', () => this.reduced_error_2_texture],
+          ],
+          out: [this.topological_best_idx_texture],
+          run: this.gl_helper.runProgram,
+          dims: [this.particles_width, this.particles_height],
         };
       };
 
