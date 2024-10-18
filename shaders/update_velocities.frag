@@ -5,7 +5,7 @@ precision highp int;
 precision highp isampler2D ;
 precision highp usampler2D ;
 
-uniform sampler2D positions_texture, velocities_texture, bests_texture, global_best_texture;
+uniform sampler2D positions_texture, velocities_texture, bests_texture, global_best_texture, topological_best_idx_texture;
 uniform usampler2D  itinymtState, itinymtMat;
 
 layout (location = 0) out vec4 new_velocity;
@@ -150,6 +150,10 @@ void main() {
     vec4 velocity = texture(velocities_texture, cc);
     vec4 best = texture(bests_texture, cc);
     vec4 global_best = texture(global_best_texture, cc);
+
+    ivec2 particle_dims = textureSize(topological_best_idx_texture, 0);
+    ivec2 my_particle_idx = ivec2(floor(cc*vec2(particle_dims)));
+    ivec2 topological_best_idx = ivec2(texelFetch(topological_best_idx_texture, my_particle_idx, 0).xy);
 
     int idx = 0;
     if (cc.x > 0.5) idx += 1;

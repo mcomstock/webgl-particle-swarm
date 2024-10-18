@@ -19,7 +19,7 @@ void main() {
         ivec2 global_best_idx = ivec2(re2.yz);
         global_best_idx += ivec2(round(cc)) * (dims/2);
         global_best_out = texelFetch(positions_texture, global_best_idx, 0);
-        best_error_value_out = vec4(re2.x, 0.0, 0.0, 0.0);
+        best_error_value_out = vec4(re2.xyz, 0.0);
     } else {
         global_best_out = texture(global_best_texture, cc);
         best_error_value_out = best_error;
