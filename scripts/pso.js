@@ -12,6 +12,7 @@ define('scripts/pso', [
   'text!shaders/update_velocities.frag',
   'text!shaders/update_particles.frag',
   'text!shaders/update_local_bests.frag',
+  'text!shaders/update_topological_best_complete.frag',
   'text!shaders/round_float.frag',
   'text!shaders/hector_fhn.frag',
   'text!shaders/bueno_4v.frag',
@@ -31,6 +32,7 @@ define('scripts/pso', [
   UpdateVelocitiesShader,
   UpdateParticlesShader,
   UpdateLocalBestsShader,
+  UpdateTopologicalBestsCompleteShader,
   RoundFloatShader,
   HectorFHNShader,
   Bueno4vShader,
@@ -491,6 +493,8 @@ define('scripts/pso', [
       this.reduced_error_1_texture = gl_helper.loadFloatTexture(particles_width, 1, null);
       this.reduced_error_2_texture = gl_helper.loadFloatTexture(1, 1, null);
 
+      this.topological_best_idx_texture = gl_helper.loadUintTexture(particles_width, particles_height, null);
+
       // These need to be 2x2 to match the global best texture
       const best_error_value_array = new Float32Array(16);
       best_error_value_array[0] = this.env.particles.best_error_value;
@@ -585,6 +589,7 @@ define('scripts/pso', [
             ['velocities_texture', 'tex', () => this.velocities_textures[num]],
             ['bests_texture', 'tex', () => this.bests_textures[num]],
             ['global_best_texture', 'tex', () => this.global_best_textures[num]],
+            ['topological_best_idx_texture', 'tex', () => this.topological_best_idx_texture],
             ['itinymtState', 'tex', () => this.env.velocity_update.ftinymtState],
             ['itinymtMat', 'tex', () => this.env.velocity_update.itinymtMat],
             ['phi_local', '1f', () => this.env.particles.phi_local],
@@ -765,6 +770,17 @@ define('scripts/pso', [
 
         local_error_copy: makeCopySolver('local_bests_error_texture_out', 'local_bests_error_texture'),
         best_error_value_copy: makeCopySolver('best_error_value_out_texture', 'best_error_value_texture', undefined, 2, 2),
+
+        update_topological_best_complete: {
+          vert: DefaultVertexShader,
+          frag: UpdateTopologicalBestsCompleteShader,
+          uniforms: [
+            ['best_error_value_texture', 'tex', () => this.best_error_value_texture],
+          ],
+          out: [this.topological_best_idx_texture],
+          run: this.gl_helper.runProgram,
+          dims: [this.particles_width, this.particles_height],
+        },
       };
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
@@ -893,6 +909,9 @@ define('scripts/pso', [
 
       await nextframe();
       program_map.local_error_copy();
+
+      await nextframe();
+      program_map.update_topological_best_complete();
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
         await nextframe();
