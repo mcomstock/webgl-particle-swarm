@@ -910,6 +910,9 @@ define('scripts/pso', [
       await nextframe();
       program_map.local_error_copy();
 
+      await nextframe();
+      program_map.update_topological_best_complete();
+
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
         await nextframe();
         program_map['velocity_' + i]();
