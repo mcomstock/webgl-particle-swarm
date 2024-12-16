@@ -11,6 +11,57 @@ define('scripts/interface', [
       fhn: ['alpha', 'beta', 'eps', 'mu', 'gamma', 'theta', 'delta'],
       b4v: ['b4v_thv',  'b4v_tv1m',  'b4v_tv2m',  'b4v_tvp',  'b4v_uwm',  'b4v_tso1',  'b4v_kso',  'b4v_ts1',  'b4v_ts2',  'b4v_ks',  'b4v_tw1m',  'b4v_tw2m',  'b4v_tw1p',  'b4v_tfi',  'b4v_to1',  'b4v_to2',  'b4v_tso2',  'b4v_uso',  'b4v_us' ,  'b4v_tsi1', 'b4v_thw', 'b4v_thvm', 'b4v_tho', 'b4v_kwm', 'b4v_twinf', 'b4v_winfstar', 'b4v_uu'],
       bb: ['bb_tv1p', 'bb_tv1m', 'bb_tv2m', 'bb_tw1p', 'bb_tw2p', 'bb_tw1m', 'bb_tw2m', 'bb_ts1', 'bb_ts2', 'bb_tfi', 'bb_to1', 'bb_to2', 'bb_tso1', 'bb_tso2', 'bb_tsi1', 'bb_tsi2', 'bb_twinf', 'bb_thv', 'bb_thvm', 'bb_thvinf', 'bb_thw', 'bb_thwinf', 'bb_thso', 'bb_thsi', 'bb_tho', 'bb_ths', 'bb_kwp', 'bb_kwm', 'bb_ks', 'bb_kso', 'bb_ksi', 'bb_uwm', 'bb_us', 'bb_uo', 'bb_uu', 'bb_uso', 'bb_sc', 'bb_wcp', 'bb_winfstar'],
+      tnnp2006: ['tnnp2006_gna', 'tnnp2006_gk1', 'tnnp2006_gto', 'tnnp2006_gkr', 'tnnp2006_gks', 'tnnp2006_gcal', 'tnnp2006_gpk', 'tnnp2006_gpca', 'tnnp2006_gbna', 'tnnp2006_gbca', 'tnnp2006_pnak', 'tnnp2006_knaca'],
+      ovvr: ['ovvr_gnafast', 'ovvr_gnalate', 'ovvr_gto', 'ovvr_pca', 'ovvr_pcana', 'ovvr_pcak', 'ovvr_pcacamk', 'ovvr_pcanacamk', 'ovvr_pcakcamk', 'ovvr_gkr', 'ovvr_gks', 'ovvr_gk1', 'ovvr_gnaca', 'ovvr_gnak', 'ovvr_pnab', 'ovvr_pcab', 'ovvr_gkb', 'ovvr_gpca'],
+      ortp: ['ortp_gna', 'ortp_gto', 'ortp_pca', 'ortp_pcana', 'ortp_pcak', 'ortp_pcacamk', 'ortp_pcanacamk', 'ortp_pcakcamk', 'ortp_gkr', 'ortp_gks', 'ortp_gk1', 'ortp_gnaca', 'ortp_gnak', 'ortp_pnab', 'ortp_pcab', 'ortp_gkb', 'ortp_gpca'],
+    };
+
+    static default_normalization = {
+      fk: {
+        normalize: true,
+        max: 1,
+        min: 0,
+      },
+      ms: {
+        normalize: true,
+        max: 1,
+        min: 0,
+      },
+      mms: {
+        normalize: true,
+        max: 1,
+        min: 0,
+      },
+      fhn: {
+        normalize: true,
+        max: 1,
+        min: 0,
+      },
+      b4v: {
+        normalize: true,
+        max: 1.2,
+        min: 0,
+      },
+      bb: {
+        normalize: true,
+        max: 1.2,
+        min: 0,
+      },
+      tnnp2006: {
+        normalize: false,
+        max: 36.05,
+        min: -86.3,
+      },
+      ovvr: {
+        normalize: false,
+        max: 39.92,
+        min: -87.84,
+      },
+      ortp: {
+        normalize: false,
+        max: 43.29,
+        min: -87.85,
+      },
     };
 
     constructor() {
@@ -51,7 +102,9 @@ define('scripts/interface', [
         this[model] = model_elements;
       }
 
-      this.normalization = document.getElementById('normalization');
+      this.normalize = document.getElementById('normalize');
+      this.normalization_max = document.getElementById('normalization-max');
+      this.normalization_min = document.getElementById('normalization-min');
       this.data_num_beats = document.getElementById('data_num_beats');
       this.data_pre_beats = document.getElementById('data_pre_beats');
       this.data_sample_interval = document.getElementById('data_sample_interval');
@@ -103,6 +156,24 @@ define('scripts/interface', [
       this.error_ymax = document.getElementById('error_ymax');
     }
 
+    setDefaultNormalization() {
+      const settings = PsoInterface.default_normalization[this.model_select.value];
+      this.normalize.checked = settings.normalize;
+      this.normalization_max.value = 'max' in settings ? settings.max : '';
+      this.normalization_min.value = 'min' in settings ? settings.min : '';
+      this.updateNormalizationDisplay();
+    }
+
+    updateNormalizationDisplay() {
+      if (this.normalize.checked) {
+        this.normalization_max.disabled = false;
+        this.normalization_min.disabled = false;
+      } else {
+        this.normalization_max.disabled = true;
+        this.normalization_min.disabled = true;
+      }
+    }
+
     updateStatusDisplay(current, total) {
       let str = `Iteration: ${current}/${total}`;
       if (current === total) {
@@ -133,11 +204,7 @@ define('scripts/interface', [
         }
       }
 
-      if (this.model_select.value === 'b4v' || this.model_select.value === 'bb') {
-        this.normalization.value = 1.2;
-      } else {
-        this.normalization.value = 1;
-      }
+      this.setDefaultNormalization();
     }
 
     setFitCheckboxes(value) {
@@ -348,8 +415,6 @@ define('scripts/interface', [
 
         });
       }
-
-      this.normalization.value = 1;
     }
 
     displayResults(bestArr) {

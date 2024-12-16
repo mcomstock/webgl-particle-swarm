@@ -49,6 +49,9 @@
           <option value="fhn">MFHN</option>
           <option value="b4v">BOCF</option>
           <option value="bb">BBOCF</option>
+          <option value="tnnp2006">TNNP 2006</option>
+          <option value="ovvr">OVVR</option>
+          <option value="ortp">ORTP</option>
         </select>
 
         <button type="button" id="fit-all-button">Fit all</button>
@@ -679,16 +682,327 @@
           <input id="bb_winfstar_max" type="text">
           <input id="bb_winfstar_fit" type="checkbox" class="fit-checkbox" checked="true">
         </div>
+
+        <div id="tnnp2006-parameters" class="param-div-hidden">
+          <span>Parameter</span>
+          <span>Value</span>
+          <span>Minimum</span>
+          <span>Maximum</span>
+          <span>Fit?</span>
+
+          <span>GNa</span>
+          <input id="tnnp2006_gna_val" type="text">
+          <input id="tnnp2006_gna_min" type="text">
+          <input id="tnnp2006_gna_max" type="text">
+          <input id="tnnp2006_gna_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GK1</span>
+          <input id="tnnp2006_gk1_val" type="text">
+          <input id="tnnp2006_gk1_min" type="text">
+          <input id="tnnp2006_gk1_max" type="text">
+          <input id="tnnp2006_gk1_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>Gto</span>
+          <input id="tnnp2006_gto_val" type="text">
+          <input id="tnnp2006_gto_min" type="text">
+          <input id="tnnp2006_gto_max" type="text">
+          <input id="tnnp2006_gto_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GKr</span>
+          <input id="tnnp2006_gkr_val" type="text">
+          <input id="tnnp2006_gkr_min" type="text">
+          <input id="tnnp2006_gkr_max" type="text">
+          <input id="tnnp2006_gkr_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GKs</span>
+          <input id="tnnp2006_gks_val" type="text">
+          <input id="tnnp2006_gks_min" type="text">
+          <input id="tnnp2006_gks_max" type="text">
+          <input id="tnnp2006_gks_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GCaL</span>
+          <input id="tnnp2006_gcal_val" type="text">
+          <input id="tnnp2006_gcal_min" type="text">
+          <input id="tnnp2006_gcal_max" type="text">
+          <input id="tnnp2006_gcal_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GpK</span>
+          <input id="tnnp2006_gpk_val" type="text">
+          <input id="tnnp2006_gpk_min" type="text">
+          <input id="tnnp2006_gpk_max" type="text">
+          <input id="tnnp2006_gpk_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GpCa</span>
+          <input id="tnnp2006_gpca_val" type="text">
+          <input id="tnnp2006_gpca_min" type="text">
+          <input id="tnnp2006_gpca_max" type="text">
+          <input id="tnnp2006_gpca_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GbNa</span>
+          <input id="tnnp2006_gbna_val" type="text">
+          <input id="tnnp2006_gbna_min" type="text">
+          <input id="tnnp2006_gbna_max" type="text">
+          <input id="tnnp2006_gbna_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GbCa</span>
+          <input id="tnnp2006_gbca_val" type="text">
+          <input id="tnnp2006_gbca_min" type="text">
+          <input id="tnnp2006_gbca_max" type="text">
+          <input id="tnnp2006_gbca_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>pNaK</span>
+          <input id="tnnp2006_pnak_val" type="text">
+          <input id="tnnp2006_pnak_min" type="text">
+          <input id="tnnp2006_pnak_max" type="text">
+          <input id="tnnp2006_pnak_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>kNaCa</span>
+          <input id="tnnp2006_knaca_val" type="text">
+          <input id="tnnp2006_knaca_min" type="text">
+          <input id="tnnp2006_knaca_max" type="text">
+          <input id="tnnp2006_knaca_fit" type="checkbox" class="fit-checkbox" checked="true">
+        </div>
+
+        <div id="ovvr-parameters" class="param-div-hidden">
+          <span>Parameter</span>
+          <span>Value</span>
+          <span>Minimum</span>
+          <span>Maximum</span>
+          <span>Fit?</span>
+
+          <span>GNafast</span>
+          <input id="ovvr_gnafast_val" type="text">
+          <input id="ovvr_gnafast_min" type="text">
+          <input id="ovvr_gnafast_max" type="text">
+          <input id="ovvr_gnafast_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GNalate</span>
+          <input id="ovvr_gnalate_val" type="text">
+          <input id="ovvr_gnalate_min" type="text">
+          <input id="ovvr_gnalate_max" type="text">
+          <input id="ovvr_gnalate_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>Gto</span>
+          <input id="ovvr_gto_val" type="text">
+          <input id="ovvr_gto_min" type="text">
+          <input id="ovvr_gto_max" type="text">
+          <input id="ovvr_gto_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCa</span>
+          <input id="ovvr_pca_val" type="text">
+          <input id="ovvr_pca_min" type="text">
+          <input id="ovvr_pca_max" type="text">
+          <input id="ovvr_pca_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCaNa</span>
+          <input id="ovvr_pcana_val" type="text">
+          <input id="ovvr_pcana_min" type="text">
+          <input id="ovvr_pcana_max" type="text">
+          <input id="ovvr_pcana_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCaK</span>
+          <input id="ovvr_pcak_val" type="text">
+          <input id="ovvr_pcak_min" type="text">
+          <input id="ovvr_pcak_max" type="text">
+          <input id="ovvr_pcak_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCaCaMK</span>
+          <input id="ovvr_pcacamk_val" type="text">
+          <input id="ovvr_pcacamk_min" type="text">
+          <input id="ovvr_pcacamk_max" type="text">
+          <input id="ovvr_pcacamk_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCaNaCaMK</span>
+          <input id="ovvr_pcanacamk_val" type="text">
+          <input id="ovvr_pcanacamk_min" type="text">
+          <input id="ovvr_pcanacamk_max" type="text">
+          <input id="ovvr_pcanacamk_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCaKCaMK</span>
+          <input id="ovvr_pcakcamk_val" type="text">
+          <input id="ovvr_pcakcamk_min" type="text">
+          <input id="ovvr_pcakcamk_max" type="text">
+          <input id="ovvr_pcakcamk_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GKr</span>
+          <input id="ovvr_gkr_val" type="text">
+          <input id="ovvr_gkr_min" type="text">
+          <input id="ovvr_gkr_max" type="text">
+          <input id="ovvr_gkr_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GKs</span>
+          <input id="ovvr_gks_val" type="text">
+          <input id="ovvr_gks_min" type="text">
+          <input id="ovvr_gks_max" type="text">
+          <input id="ovvr_gks_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GK1</span>
+          <input id="ovvr_gk1_val" type="text">
+          <input id="ovvr_gk1_min" type="text">
+          <input id="ovvr_gk1_max" type="text">
+          <input id="ovvr_gk1_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GNaCa</span>
+          <input id="ovvr_gnaca_val" type="text">
+          <input id="ovvr_gnaca_min" type="text">
+          <input id="ovvr_gnaca_max" type="text">
+          <input id="ovvr_gnaca_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GNaK</span>
+          <input id="ovvr_gnak_val" type="text">
+          <input id="ovvr_gnak_min" type="text">
+          <input id="ovvr_gnak_max" type="text">
+          <input id="ovvr_gnak_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PNab</span>
+          <input id="ovvr_pnab_val" type="text">
+          <input id="ovvr_pnab_min" type="text">
+          <input id="ovvr_pnab_max" type="text">
+          <input id="ovvr_pnab_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCab</span>
+          <input id="ovvr_pcab_val" type="text">
+          <input id="ovvr_pcab_min" type="text">
+          <input id="ovvr_pcab_max" type="text">
+          <input id="ovvr_pcab_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GKb</span>
+          <input id="ovvr_gkb_val" type="text">
+          <input id="ovvr_gkb_min" type="text">
+          <input id="ovvr_gkb_max" type="text">
+          <input id="ovvr_gkb_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GpCa</span>
+          <input id="ovvr_gpca_val" type="text">
+          <input id="ovvr_gpca_min" type="text">
+          <input id="ovvr_gpca_max" type="text">
+          <input id="ovvr_gpca_fit" type="checkbox" class="fit-checkbox" checked="true">
+        </div>
+
+        <div id="ortp-parameters" class="param-div-hidden">
+          <span>Parameter</span>
+          <span>Value</span>
+          <span>Minimum</span>
+          <span>Maximum</span>
+          <span>Fit?</span>
+
+          <span>GNa</span>
+          <input id="ortp_gna_val" type="text">
+          <input id="ortp_gna_min" type="text">
+          <input id="ortp_gna_max" type="text">
+          <input id="ortp_gna_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>Gto</span>
+          <input id="ortp_gto_val" type="text">
+          <input id="ortp_gto_min" type="text">
+          <input id="ortp_gto_max" type="text">
+          <input id="ortp_gto_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCa</span>
+          <input id="ortp_pca_val" type="text">
+          <input id="ortp_pca_min" type="text">
+          <input id="ortp_pca_max" type="text">
+          <input id="ortp_pca_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCaNa</span>
+          <input id="ortp_pcana_val" type="text">
+          <input id="ortp_pcana_min" type="text">
+          <input id="ortp_pcana_max" type="text">
+          <input id="ortp_pcana_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCaK</span>
+          <input id="ortp_pcak_val" type="text">
+          <input id="ortp_pcak_min" type="text">
+          <input id="ortp_pcak_max" type="text">
+          <input id="ortp_pcak_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCaCaMK</span>
+          <input id="ortp_pcacamk_val" type="text">
+          <input id="ortp_pcacamk_min" type="text">
+          <input id="ortp_pcacamk_max" type="text">
+          <input id="ortp_pcacamk_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCaNaCaMK</span>
+          <input id="ortp_pcanacamk_val" type="text">
+          <input id="ortp_pcanacamk_min" type="text">
+          <input id="ortp_pcanacamk_max" type="text">
+          <input id="ortp_pcanacamk_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCaKCaMK</span>
+          <input id="ortp_pcakcamk_val" type="text">
+          <input id="ortp_pcakcamk_min" type="text">
+          <input id="ortp_pcakcamk_max" type="text">
+          <input id="ortp_pcakcamk_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GKr</span>
+          <input id="ortp_gkr_val" type="text">
+          <input id="ortp_gkr_min" type="text">
+          <input id="ortp_gkr_max" type="text">
+          <input id="ortp_gkr_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GKs</span>
+          <input id="ortp_gks_val" type="text">
+          <input id="ortp_gks_min" type="text">
+          <input id="ortp_gks_max" type="text">
+          <input id="ortp_gks_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GK1</span>
+          <input id="ortp_gk1_val" type="text">
+          <input id="ortp_gk1_min" type="text">
+          <input id="ortp_gk1_max" type="text">
+          <input id="ortp_gk1_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GNaCa</span>
+          <input id="ortp_gnaca_val" type="text">
+          <input id="ortp_gnaca_min" type="text">
+          <input id="ortp_gnaca_max" type="text">
+          <input id="ortp_gnaca_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GNaK</span>
+          <input id="ortp_gnak_val" type="text">
+          <input id="ortp_gnak_min" type="text">
+          <input id="ortp_gnak_max" type="text">
+          <input id="ortp_gnak_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PNab</span>
+          <input id="ortp_pnab_val" type="text">
+          <input id="ortp_pnab_min" type="text">
+          <input id="ortp_pnab_max" type="text">
+          <input id="ortp_pnab_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>PCab</span>
+          <input id="ortp_pcab_val" type="text">
+          <input id="ortp_pcab_min" type="text">
+          <input id="ortp_pcab_max" type="text">
+          <input id="ortp_pcab_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GKb</span>
+          <input id="ortp_gkb_val" type="text">
+          <input id="ortp_gkb_min" type="text">
+          <input id="ortp_gkb_max" type="text">
+          <input id="ortp_gkb_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GpCa</span>
+          <input id="ortp_gpca_val" type="text">
+          <input id="ortp_gpca_min" type="text">
+          <input id="ortp_gpca_max" type="text">
+          <input id="ortp_gpca_fit" type="checkbox" class="fit-checkbox" checked="true">
+        </div>
       </div>
     </div>
 
+    <div class="normalization-div">
+      <label for="normalize">Normalize?</label>
+      <input id="normalize" type="checkbox">
+
+      <label for="normalization-min">Normalization minimum</label>
+      <input id="normalization-min" type="text">
+
+      <label for="normalization-max">Normalization maximum</label>
+      <input id="normalization-max" type="text">
+    </div>
+
     <div class="data_div">
-      <span>Normalize to</span>
-      <input id="normalization" type="text">
-
-      <br>
-      <br>
-
       <span>Number of stimuli</span>
       <input id="data_num_beats" type="text">
 

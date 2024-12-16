@@ -28,10 +28,12 @@ require([
     pso_interface.displayBounds(Pso.getEnv());
   };
 
+
   pso_interface.add_button.onclick = () => pso_interface.addInput();
   pso_interface.remove_button.onclick = () => pso_interface.removeInput();
   pso_interface.fit_all_button.onclick = () => pso_interface.setFitCheckboxes(true);
   pso_interface.fit_none_button.onclick = () => pso_interface.setFitCheckboxes(false);
+  pso_interface.normalize.onclick = () => pso_interface.updateNormalizationDisplay();
   pso_interface.plot_from_vals_button.onclick = () => {
     if (!pso) {
       alert('A fit must be created before modifying the parameters');
@@ -82,7 +84,10 @@ require([
         datatypes,
         weights,
         sample_interval,
-        normalization,
+        normalize,
+        normalization_max,
+        normalization_min,
+        normalized_align_threshold,
       }) => ({
         model,
         dt,
@@ -92,7 +97,10 @@ require([
         datatypes,
         weights,
         sample_interval,
-        normalization,
+        normalize,
+        normalization_max,
+        normalization_min,
+        normalized_align_threshold,
       }))(pso.env.simulation),
       'stimulus': structuredClone(pso.env.stimulus),
       'particles': structuredClone(pso.env.particles),
@@ -148,10 +156,13 @@ require([
       pso_interface.data_pre_beats.value,
       pso_interface.data_num_beats.value,
       pso_interface.data_sample_interval.value,
+      pso_interface.normalize.checked,
+      Number(pso_interface.normalization_max.value),
+      Number(pso_interface.normalization_min.value),
       hyperparams,
     );
 
-    pso.readData(input_data, pso_interface.normalization.value);
+    pso.readData(input_data);
 
     pso.initializeTextures();
     pso.setupAllSolvers();
@@ -262,7 +273,7 @@ require([
       apd_ends = apd_starts.map((x, idx) => x + (apds[idx] || 0) / pso.env.simulation.sample_interval);
     } else {
       actual_data = pso.env.simulation.trimmed_data[cl_idx];
-      const align_thresh = actual_data.find(x => x > 0.15);
+      const align_thresh = pso.env.simulation.align_thresh[cl_idx];
       align_index = plotting_sim_data.findIndex(x => x > align_thresh);
     }
 

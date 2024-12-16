@@ -164,5 +164,19 @@ void main() {
         }
     }
 
+    // Check to make sure that the simulation output was compared with most of the data. This check
+    // assumes that no more that half of the first beat should be skipped due to alignment.
+    //
+    // This check prevents a very specific issue. Certain data traces (mostly downsampled model
+    // data) will have such a fast upstroke that alignment occurs with a very large voltage
+    // value. The simulation can achieve a very low error by having several beats with a peak just
+    // below the maximum and then a later peak that hits it (for example, through physiologically
+    // incorrect conductances for later currents or amplitude alternans) which results in very few
+    // data points actually being compared.
+    int points_to_compare = min(num_data_points, int(floor(((float(num_beats)-0.5)*period)/sample_interval)));
+    if (data_type != 1 && data_index < points_to_compare) {
+        error += 1e6;
+    }
+
     error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
 }

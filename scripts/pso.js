@@ -20,6 +20,9 @@ define('scripts/pso', [
   'text!shaders/bueno_4v.frag',
   'text!shaders/bueno_brugada.frag',
   'text!shaders/update_global_best.frag',
+  'text!shaders/tnnp2006.frag',
+  'text!shaders/ovvr.frag',
+  'text!shaders/ortp.frag',
 ], function(
   GlHelper,
   CopyShader,
@@ -42,6 +45,9 @@ define('scripts/pso', [
   Bueno4vShader,
   BuenoBrugadaShader,
   UpdateGlobalBestShader,
+  Tnnp2006Shader,
+  OvvrShader,
+  OrtpShader,
 ) {
   'use strict';
 
@@ -93,7 +99,10 @@ define('scripts/pso', [
           weights: [],
           full_normalized_data: [],
           sample_interval: 1.0,
-          normalization: 1.0,
+          normalize: true,
+          normalization_max: 1.0,
+          normalization_min: 0.0,
+          normalized_align_threshold: 0.15,
         },
         stimulus: {
           stim_dur: 10.0,
@@ -277,13 +286,28 @@ define('scripts/pso', [
             0.94,   // winfstar fixed
           ],
         ],
+        tnnp2006_bounds: [
+          // GNa     GK1     Gto     GKr     GKs    GCaL     GpK     GpCa     GbNa     GbCa      pNaK   kNaCa
+          [  7.419,  2.7025, 0.0365, 0.0765, 0.196, 1.99e-5, 0.0073, 0.0619,  1.45e-4, 2.96e-4,  1.362, 500.0],
+          [  29.676, 10.81,  0.146, 0.306,   0.784, 7.96e-5, 0.0292, 0.2476,  5.8e-4,  0.001184, 5.448, 2000.0],
+        ],
+        ovvr_bounds: [
+          // gnafast gnalate  gto   pca      pcana    pcak       pcacamk  pcanacamk pcakcamk   gkr    gks     gk1     gnaca   gnak  pnab       pcab     gkb     gpca
+          [  37.5,   0.00375, 0.01, 0.00005, 6.25e-8, 1.787e-8, 5.5e-5,  6.875e-8, 1.9657e-8, 0.023, 0.0017, 0.0954, 0.0004, 15.0, 1.875e-10, 1.25e-8, 0.0015, 0.00025],
+          [  150.0,  0.015,   0.04, 0.0002,  2.5e-7,  7.148e-8, 0.00022, 2.75e-7,  7.8628e-8, 0.092, 0.0068, 0.3816, 0.0016, 60.0, 7.5e-10,   5.0e-8,  0.006,  0.001],
+        ],
+        ortp_bounds: [
+          // gna     gto   pca      pcana    pcak       pcacamk  pcanacamk pcakcamk   gkr    gks     gk1     gnaca   gnak  pnab       pcab     gkb     gpca
+          [  7.419,  0.01, 0.00005, 6.25e-8, 1.787e-8, 5.5e-5,  6.875e-8, 1.9657e-8, 0.023, 0.0017, 0.0954, 0.0004, 15.0, 1.875e-10, 1.25e-8, 0.0015, 0.00025],
+          [  29.676, 0.04, 0.0002,  2.5e-7,  7.148e-8, 0.00022, 2.75e-7,  7.8628e-8, 0.092, 0.0068, 0.3816, 0.0016, 60.0, 7.5e-10,   5.0e-8,  0.006,  0.001],
+        ],
         velocity_update: {},
       };
 
       return env;
     }
 
-    setupEnv(model, bounds, stimulus_params, pre_beats, num_beats, sample_interval, hyperparams) {
+    setupEnv(model, bounds, stimulus_params, pre_beats, num_beats, sample_interval, normalize, normalization_max, normalization_min, hyperparams) {
       this.env = Pso.getEnv();
       const env = this.env;
 
@@ -300,6 +324,10 @@ define('scripts/pso', [
       if (Number(sample_interval)) {
         env.simulation.sample_interval = Number(sample_interval);
       }
+
+      env.simulation.normalize = normalize;
+      env.simulation.normalization_max = normalization_max;
+      env.simulation.normalization_min = normalization_min;
 
       env.stimulus = stimulus_params;
 
@@ -327,16 +355,16 @@ define('scripts/pso', [
       env.particles.iteration_count = hyperparams.iteration_count;
     }
 
-    normalizeData(parsed_data, normalize) {
+    normalizeData(parsed_data, normalization_max, normalization_min) {
       const min = Math.min(...parsed_data);
       const max = Math.max(...parsed_data);
 
-      const normalized_data = parsed_data.map(x => (x-min)*(normalize/(max-min)));
+      const normalized_data = parsed_data.map(x => normalization_min + (x-min)*((normalization_max-normalization_min)/(max-min)));
 
       return normalized_data;
     }
 
-    readData(input_data, normalize) {
+    readData(input_data) {
       const raw_input_data = [];
       const input_cls = [];
       const datatypes = [];
@@ -359,8 +387,6 @@ define('scripts/pso', [
       const align_thresh = [];
       const all_full_normalized_data = [];
 
-      const normalization = Number(normalize) === 0 ? 0 : Number(normalize) || 1;
-      this.env.simulation.normalization = normalization;
       const delta = 0.001;
 
       for (let i = 0; i < raw_input_data.length; ++i) {
@@ -383,9 +409,12 @@ define('scripts/pso', [
           const actual_data = split_data.filter(x => !(x.trim() === ""));
 
           const full_parsed_data = actual_data.map(x => parseFloat(x.trim()));
-          const full_normalized_data = normalization ? this.normalizeData(full_parsed_data, normalization) : full_parsed_data;
+          const full_normalized_data = this.env.simulation.normalize ? this.normalizeData(full_parsed_data, this.env.simulation.normalization_max, this.env.simulation.normalization_min) : full_parsed_data;
 
-          const first_compare_index = full_normalized_data.findIndex(number => number > 0.15);
+          const data_max = Math.max(...full_normalized_data);
+          const data_min = Math.min(...full_normalized_data);
+          const actual_align_thresh = (this.env.simulation.normalized_align_threshold-data_min)/(data_max-data_min);
+          const first_compare_index = full_normalized_data.findIndex(number => actual_align_thresh);
 
           const left_trimmed_data = full_normalized_data.slice(first_compare_index);
 
@@ -658,26 +687,35 @@ define('scripts/pso', [
       const makeRunSimulationSolver = (final) => {
         let model_frag;
         switch (String(this.env.simulation.model)) {
-          case 'fk':
-            model_frag = FentonKarmaShader;
-            break;
-          case 'ms':
-            model_frag = MitchellSchaefferShader;
-            break;
-          case 'mms':
-            model_frag = ModifiedMsShader;
-            break;
-          case 'fhn':
-            model_frag = HectorFHNShader;
-            break;
-          case 'b4v':
-            model_frag = Bueno4vShader;
-            break;
-          case 'bb':
-            model_frag = BuenoBrugadaShader;
-            break;
-          default:
-            console.log("How could no model be selected oh no!");
+        case 'fk':
+          model_frag = FentonKarmaShader;
+          break;
+        case 'ms':
+          model_frag = MitchellSchaefferShader;
+          break;
+        case 'mms':
+          model_frag = ModifiedMsShader;
+          break;
+        case 'fhn':
+          model_frag = HectorFHNShader;
+          break;
+        case 'b4v':
+          model_frag = Bueno4vShader;
+          break;
+        case 'bb':
+          model_frag = BuenoBrugadaShader;
+          break;
+        case 'tnnp2006':
+          model_frag = Tnnp2006Shader;
+          break;
+        case 'ovvr':
+          model_frag = OvvrShader;
+          break;
+        case 'ortp':
+          model_frag = OrtpShader;
+          break;
+        default:
+          console.log("How could no model be selected oh no!");
         }
 
         const solver = {
