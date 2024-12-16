@@ -125,6 +125,14 @@ canvas {
   margin-right: 2em;
 }
 
+.normalization-div input {
+  margin-right: 2em;
+}
+
+.normalization-div input[type=text] {
+  width: 5em;
+}
+
 .data-input input[type=text] {
   width: 5em;
   margin-right: 2em;

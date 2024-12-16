@@ -49,6 +49,7 @@
           <option value="fhn">Hector-FHN</option>
           <option value="b4v">Bueno-Orovio</option>
           <option value="bb">Bueno-Orovio Brugada</option>
+          <option value="tnnp2006">TNNP 2006</option>
         </select>
 
         <button type="button" id="fit-all-button">Fit all</button>
@@ -678,16 +679,101 @@
           <input id="bb_winfstar_max" type="text">
           <input id="bb_winfstar_fit" type="checkbox" class="fit-checkbox" checked="true">
         </div>
+
+        <div id="tnnp2006-parameters" class="param-div-hidden">
+          <span>Parameter</span>
+          <span>Value</span>
+          <span>Minimum</span>
+          <span>Maximum</span>
+          <span>Fit?</span>
+
+          <span>GNa</span>
+          <input id="tnnp2006_gna_val" type="text">
+          <input id="tnnp2006_gna_min" type="text">
+          <input id="tnnp2006_gna_max" type="text">
+          <input id="tnnp2006_gna_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GK1</span>
+          <input id="tnnp2006_gk1_val" type="text">
+          <input id="tnnp2006_gk1_min" type="text">
+          <input id="tnnp2006_gk1_max" type="text">
+          <input id="tnnp2006_gk1_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>Gto</span>
+          <input id="tnnp2006_gto_val" type="text">
+          <input id="tnnp2006_gto_min" type="text">
+          <input id="tnnp2006_gto_max" type="text">
+          <input id="tnnp2006_gto_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GKr</span>
+          <input id="tnnp2006_gkr_val" type="text">
+          <input id="tnnp2006_gkr_min" type="text">
+          <input id="tnnp2006_gkr_max" type="text">
+          <input id="tnnp2006_gkr_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GKs</span>
+          <input id="tnnp2006_gks_val" type="text">
+          <input id="tnnp2006_gks_min" type="text">
+          <input id="tnnp2006_gks_max" type="text">
+          <input id="tnnp2006_gks_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GCaL</span>
+          <input id="tnnp2006_gcal_val" type="text">
+          <input id="tnnp2006_gcal_min" type="text">
+          <input id="tnnp2006_gcal_max" type="text">
+          <input id="tnnp2006_gcal_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GpK</span>
+          <input id="tnnp2006_gpk_val" type="text">
+          <input id="tnnp2006_gpk_min" type="text">
+          <input id="tnnp2006_gpk_max" type="text">
+          <input id="tnnp2006_gpk_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GpCa</span>
+          <input id="tnnp2006_gpca_val" type="text">
+          <input id="tnnp2006_gpca_min" type="text">
+          <input id="tnnp2006_gpca_max" type="text">
+          <input id="tnnp2006_gpca_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GbNa</span>
+          <input id="tnnp2006_gbna_val" type="text">
+          <input id="tnnp2006_gbna_min" type="text">
+          <input id="tnnp2006_gbna_max" type="text">
+          <input id="tnnp2006_gbna_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>GbCa</span>
+          <input id="tnnp2006_gbca_val" type="text">
+          <input id="tnnp2006_gbca_min" type="text">
+          <input id="tnnp2006_gbca_max" type="text">
+          <input id="tnnp2006_gbca_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>pNaK</span>
+          <input id="tnnp2006_pnak_val" type="text">
+          <input id="tnnp2006_pnak_min" type="text">
+          <input id="tnnp2006_pnak_max" type="text">
+          <input id="tnnp2006_pnak_fit" type="checkbox" class="fit-checkbox" checked="true">
+
+          <span>kNaCa</span>
+          <input id="tnnp2006_knaca_val" type="text">
+          <input id="tnnp2006_knaca_min" type="text">
+          <input id="tnnp2006_knaca_max" type="text">
+          <input id="tnnp2006_knaca_fit" type="checkbox" class="fit-checkbox" checked="true">
+        </div>
       </div>
     </div>
 
+    <div class="normalization-div">
+      <label for="normalize">Normalize?</label>
+      <input id="normalize" type="checkbox">
+
+      <label for="normalization-min">Normalization minimum</label>
+      <input id="normalization-min" type="text">
+
+      <label for="normalization-max">Normalization maximum</label>
+      <input id="normalization-max" type="text">
+    </div>
+
     <div class="data_div">
-      <span>Normalize to</span>
-      <input id="normalization" type="text">
-
-      <br>
-      <br>
-
       <span>Number of beats</span>
       <input id="data_num_beats" type="text">
 

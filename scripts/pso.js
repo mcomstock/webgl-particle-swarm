@@ -20,6 +20,7 @@ define('scripts/pso', [
   'text!shaders/bueno_4v.frag',
   'text!shaders/bueno_brugada.frag',
   'text!shaders/update_global_best.frag',
+  'text!shaders/tnnp2006.frag',
 ], function(
   GlHelper,
   CopyShader,
@@ -42,6 +43,7 @@ define('scripts/pso', [
   Bueno4vShader,
   BuenoBrugadaShader,
   UpdateGlobalBestShader,
+  Tnnp2006Shader,
 ) {
   'use strict';
 
@@ -93,7 +95,9 @@ define('scripts/pso', [
           weights: [],
           full_normalized_data: [],
           sample_interval: 1.0,
-          normalization: 1.0,
+          normalize: true,
+          normalization_max: 1.0,
+          normalization_min: 0.0,
         },
         stimulus: {
           stim_dur: 10.0,
@@ -277,13 +281,18 @@ define('scripts/pso', [
             0.94,   // winfstar fixed
           ],
         ],
+        tnnp2006_bounds: [
+          // GNa     GK1    Gto     GKr     GKs     GCaL        GpK      GpCa     GbNa      GbCa       pNaK   kNaCa
+          [ 8.9028,  3.243, 0.1205, 0.0918, 0.2352, 0.00002388, 0.00876, 0.07428, 0.000174, 0.0003552, 1.362, 600.0],
+          [ 20.7732, 7.567, 0.3675, 1.0,    0.75,   0.0003,     0.02044, 0.17332, 0.000406, 0.0008288, 5.448, 1400.0],
+        ],
         velocity_update: {},
       };
 
       return env;
     }
 
-    setupEnv(model, bounds, stimulus_params, pre_beats, num_beats, sample_interval, hyperparams) {
+    setupEnv(model, bounds, stimulus_params, pre_beats, num_beats, sample_interval, normalize, normalization_max, normalization_min, hyperparams) {
       this.env = Pso.getEnv();
       const env = this.env;
 
@@ -300,6 +309,10 @@ define('scripts/pso', [
       if (Number(sample_interval)) {
         env.simulation.sample_interval = Number(sample_interval);
       }
+
+      env.simulation.normalize = normalize;
+      env.simulation.normalization_max = normalization_max;
+      env.simulation.normalization_min = normalization_min;
 
       env.stimulus = stimulus_params;
 
@@ -327,16 +340,16 @@ define('scripts/pso', [
       env.particles.iteration_count = hyperparams.iteration_count;
     }
 
-    normalizeData(parsed_data, normalize) {
+    normalizeData(parsed_data, normalization_max, normalization_min) {
       const min = Math.min(...parsed_data);
       const max = Math.max(...parsed_data);
 
-      const normalized_data = parsed_data.map(x => (x-min)*(normalize/(max-min)));
+      const normalized_data = parsed_data.map(x => normalization_min + (x-min)*((normalization_max-normalization_min)/(max-min)));
 
       return normalized_data;
     }
 
-    readData(input_data, normalize) {
+    readData(input_data) {
       const raw_input_data = [];
       const input_cls = [];
       const datatypes = [];
@@ -359,8 +372,6 @@ define('scripts/pso', [
       const align_thresh = [];
       const all_full_normalized_data = [];
 
-      const normalization = Number(normalize) === 0 ? 0 : Number(normalize) || 1;
-      this.env.simulation.normalization = normalization;
       const delta = 0.001;
 
       for (let i = 0; i < raw_input_data.length; ++i) {
@@ -383,9 +394,13 @@ define('scripts/pso', [
           const actual_data = split_data.filter(x => !(x.trim() === ""));
 
           const full_parsed_data = actual_data.map(x => parseFloat(x.trim()));
-          const full_normalized_data = normalization ? this.normalizeData(full_parsed_data, normalization) : full_parsed_data;
+          const full_normalized_data = this.env.simulation.normalize ? this.normalizeData(full_parsed_data, this.env.simulation.normalization_max, this.env.simulation.normalization_min) : full_parsed_data;
 
-          const first_compare_index = full_normalized_data.findIndex(number => number > 0.15);
+          const data_max = Math.max(...full_normalized_data);
+          const data_min = Math.min(...full_normalized_data);
+          // Future work: Should the threshold value of 0.15 be a parameter? It should probably be
+          // pulled from the env even if it isn't user-facing, and should be saved as run output.
+          const first_compare_index = full_normalized_data.findIndex(number => (number-data_min)/(data_max-data_min) > 0.15);
 
           const left_trimmed_data = full_normalized_data.slice(first_compare_index);
 
@@ -658,26 +673,29 @@ define('scripts/pso', [
       const makeRunSimulationSolver = (final) => {
         let model_frag;
         switch (String(this.env.simulation.model)) {
-          case 'fk':
-            model_frag = FentonKarmaShader;
-            break;
-          case 'ms':
-            model_frag = MitchellSchaefferShader;
-            break;
-          case 'mms':
-            model_frag = ModifiedMsShader;
-            break;
-          case 'fhn':
-            model_frag = HectorFHNShader;
-            break;
-          case 'b4v':
-            model_frag = Bueno4vShader;
-            break;
-          case 'bb':
-            model_frag = BuenoBrugadaShader;
-            break;
-          default:
-            console.log("How could no model be selected oh no!");
+        case 'fk':
+          model_frag = FentonKarmaShader;
+          break;
+        case 'ms':
+          model_frag = MitchellSchaefferShader;
+          break;
+        case 'mms':
+          model_frag = ModifiedMsShader;
+          break;
+        case 'fhn':
+          model_frag = HectorFHNShader;
+          break;
+        case 'b4v':
+          model_frag = Bueno4vShader;
+          break;
+        case 'bb':
+          model_frag = BuenoBrugadaShader;
+          break;
+        case 'tnnp2006':
+          model_frag = Tnnp2006Shader;
+          break;
+        default:
+          console.log("How could no model be selected oh no!");
         }
 
         const solver = {
