@@ -244,7 +244,7 @@ define('scripts/interface', [
       cl_label.appendChild(cl_in);
 
       const weight_label = document.createElement('label');
-      weight_label.innerHTML = 'Weight';
+      weight_label.innerHTML = 'Fitting weight';
 
       const weight_in = document.createElement('input');
       weight_in.setAttribute('type', 'text');

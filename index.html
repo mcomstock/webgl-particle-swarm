@@ -9,7 +9,7 @@
   </head>
   <body>
     <div>
-      <button type="button" id="PSO_button">Run PSO</button>
+      <button type="button" id="PSO_button">Run</button>
       <button type="button" id="save_params_button">Save parameters</button>
       <button type="button" id="save_run_button">Save run details</button>
       <span id="status_display"></span>
@@ -43,17 +43,18 @@
       <div id="parameter-section">
         <label for="model-select">Model:</label>
         <select name="model" id="model-select">
-          <option value="fk" selected>Fenton-Karma</option>
-          <option value="ms">Mitchell-Schaeffer</option>
-          <option value="mms">Modified MS</option>
-          <option value="fhn">Hector-FHN</option>
-          <option value="b4v">Bueno-Orovio</option>
-          <option value="bb">Bueno-Orovio Brugada</option>
+          <option value="fk" selected>FK</option>
+          <option value="ms">MS</option>
+          <option value="mms">MMS</option>
+          <option value="fhn">MFHN</option>
+          <option value="b4v">BOCF</option>
+          <option value="bb">BBOCF</option>
         </select>
 
         <button type="button" id="fit-all-button">Fit all</button>
         <button type="button" id="fit-none-button">Fit none</button>
         <button type="button" id="plot-from-vals-button">Plot from values</button>
+        <button type="button" id="reset_bounds">Reset bounds</button>
 
         <div id="fk-parameters" class="param-div">
           <span>Parameter</span>
@@ -62,79 +63,79 @@
           <span>Maximum</span>
           <span>Fit?</span>
 
-          <span>TR</span>
+          <span><math><msub><mi>τ</mi><mi>r</mi></msub></math></span>
           <input id="tr_val" type="text">
           <input id="tr_min" type="text">
           <input id="tr_max" type="text">
           <input id="tr_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TSI</span>
+          <span><math><msub><mi>τ</mi><mi>si</mi></msub></math></span>
           <input id="tsi_val" type="text">
           <input id="tsi_min" type="text">
           <input id="tsi_max" type="text">
           <input id="tsi_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TWP</span>
+          <span><math><msubsup><mi>τ</mi><mi>w</mi><mi>+</mi></msubsup></math></span>
           <input id="twp_val" type="text">
           <input id="twp_min" type="text">
           <input id="twp_max" type="text">
           <input id="twp_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TD</span>
+          <span><math><msub><mi>τ</mi><mi>d</mi></msub></math></span>
           <input id="td_val" type="text">
           <input id="td_min" type="text">
           <input id="td_max" type="text">
           <input id="td_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TVP</span>
+          <span><math><msubsup><mi>τ</mi><mi>v</mi><mi>+</mi></msubsup></math></span>
           <input id="tvp_val" type="text">
           <input id="tvp_min" type="text">
           <input id="tvp_max" type="text">
           <input id="tvp_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TV1M</span>
+          <span><math><msubsup><mi>τ</mi><mi>v1</mi><mi>-</mi></msubsup></math></span>
           <input id="tv1m_val" type="text">
           <input id="tv1m_min" type="text">
           <input id="tv1m_max" type="text">
           <input id="tv1m_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TV2M</span>
+          <span><math><msubsup><mi>τ</mi><mi>v2</mi><mi>-</mi></msubsup></math></span>
           <input id="tv2m_val" type="text">
           <input id="tv2m_min" type="text">
           <input id="tv2m_max" type="text">
           <input id="tv2m_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TWM</span>
+          <span><math><msubsup><mi>τ</mi><mi>w</mi><mi>-</mi></msubsup></math></span>
           <input id="twm_val" type="text">
           <input id="twm_min" type="text">
           <input id="twm_max" type="text">
           <input id="twm_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TO</span>
+          <span><math><msub><mi>τ</mi><mi>o</mi></msub></math></span>
           <input id="to_val" type="text">
           <input id="to_min" type="text">
           <input id="to_max" type="text">
           <input id="to_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>XK</span>
+          <span><math><mi>k</mi></math></span>
           <input id="xk_val" type="text">
           <input id="xk_min" type="text">
           <input id="xk_max" type="text">
           <input id="xk_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>UCSI</span>
+          <span><math><msubsup><mi>u</mi><mi>c</mi><mi>si</mi></msubsup></math></span>
           <input id="ucsi_val" type="text">
           <input id="ucsi_min" type="text">
           <input id="ucsi_max" type="text">
           <input id="ucsi_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>UC</span>
+          <span><math><msub><mi>u</mi><mi>c</mi></msub></math></span>
           <input id="uc_val" type="text">
           <input id="uc_min" type="text">
           <input id="uc_max" type="text">
           <input id="uc_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>UV</span>
+          <span><math><msub><mi>u</mi><mi>v</mi></msub></math></span>
           <input id="uv_val" type="text">
           <input id="uv_min" type="text">
           <input id="uv_max" type="text">
@@ -148,31 +149,31 @@
           <span>Maximum</span>
           <span>Fit?</span>
 
-          <span>TIN</span>
+          <span><math><msub><mi>τ</mi><mi>in</mi></msub></math></span>
           <input id="tin_val" type="text">
           <input id="tin_min" type="text">
           <input id="tin_max" type="text">
           <input id="tin_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TOUT</span>
+          <span><math><msub><mi>τ</mi><mi>out</mi></msub></math></span>
           <input id="tout_val" type="text">
           <input id="tout_min" type="text">
           <input id="tout_max" type="text">
           <input id="tout_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TCLOSE</span>
+          <span><math><msub><mi>τ</mi><mi>close</mi></msub></math></span>
           <input id="tclose_val" type="text">
           <input id="tclose_min" type="text">
           <input id="tclose_max" type="text">
           <input id="tclose_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TOPEN</span>
+          <span><math><msub><mi>τ</mi><mi>open</mi></msub></math></span>
           <input id="topen_val" type="text">
           <input id="topen_min" type="text">
           <input id="topen_max" type="text">
           <input id="topen_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>VGATE</span>
+          <span><math><msub><mi>v</mi><mi>gate</mi></msub></math></span>
           <input id="vgate_val" type="text">
           <input id="vgate_min" type="text">
           <input id="vgate_max" type="text">
@@ -186,31 +187,31 @@
           <span>Maximum</span>
           <span>Fit?</span>
 
-          <span>TIN</span>
+          <span><math><msub><mi>τ</mi><mi>in</mi></msub></math></span>
           <input id="mms_tin_val" type="text">
           <input id="mms_tin_min" type="text">
           <input id="mms_tin_max" type="text">
           <input id="mms_tin_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TOUT</span>
+          <span><math><msub><mi>τ</mi><mi>out</mi></msub></math></span>
           <input id="mms_tout_val" type="text">
           <input id="mms_tout_min" type="text">
           <input id="mms_tout_max" type="text">
           <input id="mms_tout_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TCLOSE</span>
+          <span><math><msub><mi>τ</mi><mi>close</mi></msub></math></span>
           <input id="mms_tclose_val" type="text">
           <input id="mms_tclose_min" type="text">
           <input id="mms_tclose_max" type="text">
           <input id="mms_tclose_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>TOPEN</span>
+          <span><math><msub><mi>τ</mi><mi>open</mi></msub></math></span>
           <input id="mms_topen_val" type="text">
           <input id="mms_topen_min" type="text">
           <input id="mms_topen_max" type="text">
           <input id="mms_topen_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>VGATE</span>
+          <span><math><msub><mi>v</mi><mi>gate</mi></msub></math></span>
           <input id="mms_vgate_val" type="text">
           <input id="mms_vgate_min" type="text">
           <input id="mms_vgate_max" type="text">
@@ -224,43 +225,43 @@
           <span>Maximum</span>
           <span>Fit?</span>
 
-          <span>ALPHA</span>
+          <span><math><mi>α</mi></math></span>
           <input id="alpha_val" type="text">
           <input id="alpha_min" type="text">
           <input id="alpha_max" type="text">
           <input id="alpha_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>BETA</span>
+          <span><math><mi>β</mi></math></span>
           <input id="beta_val" type="text">
           <input id="beta_min" type="text">
           <input id="beta_max" type="text">
           <input id="beta_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>EPSILON</span>
+          <span><math><mi>ε</mi></math></span>
           <input id="eps_val" type="text">
           <input id="eps_min" type="text">
           <input id="eps_max" type="text">
           <input id="eps_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>MU</span>
+          <span><math><mi>μ</mi></math></span>
           <input id="mu_val" type="text">
           <input id="mu_min" type="text">
           <input id="mu_max" type="text">
           <input id="mu_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>GAMMA</span>
+          <span><math><mi>γ</mi></math></span>
           <input id="gamma_val" type="text">
           <input id="gamma_min" type="text">
           <input id="gamma_max" type="text">
           <input id="gamma_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>THETA</span>
+          <span><math><mi>θ</mi></math></span>
           <input id="theta_val" type="text">
           <input id="theta_min" type="text">
           <input id="theta_max" type="text">
           <input id="theta_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>DELTA</span>
+          <span><math><mi>δ</mi></math></span>
           <input id="delta_val" type="text">
           <input id="delta_min" type="text">
           <input id="delta_max" type="text">
@@ -274,163 +275,163 @@
           <span>Maximum</span>
           <span>Fit?</span>
 
-          <span>thv</span>
+          <span><math><msub><mi>θ</mi><mi>v</mi></msub></math></span>
           <input id="b4v_thv_val" type="text">
           <input id="b4v_thv_min" type="text">
           <input id="b4v_thv_max" type="text">
           <input id="b4v_thv_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tv1m</span>
+          <span><math><msubsup><mi>τ</mi><mi>v1</mi><mi>-</mi></msubsup></math></span>
           <input id="b4v_tv1m_val" type="text">
           <input id="b4v_tv1m_min" type="text">
           <input id="b4v_tv1m_max" type="text">
           <input id="b4v_tv1m_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tv2m</span>
+          <span><math><msubsup><mi>τ</mi><mi>v2</mi><mi>-</mi></msubsup></math></span>
           <input id="b4v_tv2m_val" type="text">
           <input id="b4v_tv2m_min" type="text">
           <input id="b4v_tv2m_max" type="text">
           <input id="b4v_tv2m_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tvp</span>
+          <span><math><msubsup><mi>τ</mi><mi>v</mi><mi>+</mi></msubsup></math></span>
           <input id="b4v_tvp_val" type="text">
           <input id="b4v_tvp_min" type="text">
           <input id="b4v_tvp_max" type="text">
           <input id="b4v_tvp_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>uwm</span>
+          <span><math><msubsup><mi>u</mi><mi>w</mi><mi>-</mi></msubsup></math></span>
           <input id="b4v_uwm_val" type="text">
           <input id="b4v_uwm_min" type="text">
           <input id="b4v_uwm_max" type="text">
           <input id="b4v_uwm_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tso1</span>
+          <span><math><msub><mi>τ</mi><mi>so1</mi></msub></math></span>
           <input id="b4v_tso1_val" type="text">
           <input id="b4v_tso1_min" type="text">
           <input id="b4v_tso1_max" type="text">
           <input id="b4v_tso1_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>kso</span>
+          <span><math><msub><mi>k</mi><mi>so</mi></msub></math></span>
           <input id="b4v_kso_val" type="text">
           <input id="b4v_kso_min" type="text">
           <input id="b4v_kso_max" type="text">
           <input id="b4v_kso_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>ts1</span>
+          <span><math><msub><mi>τ</mi><mi>s1</mi></msub></math></span>
           <input id="b4v_ts1_val" type="text">
           <input id="b4v_ts1_min" type="text">
           <input id="b4v_ts1_max" type="text">
           <input id="b4v_ts1_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>ts2</span>
+          <span><math><msub><mi>τ</mi><mi>s2</mi></msub></math></span>
           <input id="b4v_ts2_val" type="text">
           <input id="b4v_ts2_min" type="text">
           <input id="b4v_ts2_max" type="text">
           <input id="b4v_ts2_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>ks</span>
+          <span><math><msub><mi>k</mi><mi>s</mi></msub></math></span>
           <input id="b4v_ks_val" type="text">
           <input id="b4v_ks_min" type="text">
           <input id="b4v_ks_max" type="text">
           <input id="b4v_ks_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tw1m</span>
+          <span><math><msubsup><mi>τ</mi><mi>w1</mi><mi>-</mi></msubsup></math></span>
           <input id="b4v_tw1m_val" type="text">
           <input id="b4v_tw1m_min" type="text">
           <input id="b4v_tw1m_max" type="text">
           <input id="b4v_tw1m_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tw2m</span>
+          <span><math><msubsup><mi>τ</mi><mi>w2</mi><mi>-</mi></msubsup></math></span>
           <input id="b4v_tw2m_val" type="text">
           <input id="b4v_tw2m_min" type="text">
           <input id="b4v_tw2m_max" type="text">
           <input id="b4v_tw2m_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tw1p</span>
+          <span><math><msubsup><mi>τ</mi><mi>w1</mi><mi>+</mi></msubsup></math></span>
           <input id="b4v_tw1p_val" type="text">
           <input id="b4v_tw1p_min" type="text">
           <input id="b4v_tw1p_max" type="text">
           <input id="b4v_tw1p_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tfi</span>
+          <span><math><msub><mi>τ</mi><mi>fi</mi></msub></math></span>
           <input id="b4v_tfi_val" type="text">
           <input id="b4v_tfi_min" type="text">
           <input id="b4v_tfi_max" type="text">
           <input id="b4v_tfi_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>to1</span>
+          <span><math><msub><mi>τ</mi><mi>o1</mi></msub></math></span>
           <input id="b4v_to1_val" type="text">
           <input id="b4v_to1_min" type="text">
           <input id="b4v_to1_max" type="text">
           <input id="b4v_to1_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>to2</span>
+          <span><math><msub><mi>τ</mi><mi>o2</mi></msub></math></span>
           <input id="b4v_to2_val" type="text">
           <input id="b4v_to2_min" type="text">
           <input id="b4v_to2_max" type="text">
           <input id="b4v_to2_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tso2</span>
+          <span><math><msub><mi>τ</mi><mi>so2</mi></msub></math></span>
           <input id="b4v_tso2_val" type="text">
           <input id="b4v_tso2_min" type="text">
           <input id="b4v_tso2_max" type="text">
           <input id="b4v_tso2_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>uso</span>
+          <span><math><msub><mi>u</mi><mi>so</mi></msub></math></span>
           <input id="b4v_uso_val" type="text">
           <input id="b4v_uso_min" type="text">
           <input id="b4v_uso_max" type="text">
           <input id="b4v_uso_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>us</span>
+          <span><math><msub><mi>u</mi><mi>s</mi></msub></math></span>
           <input id="b4v_us_val" type="text">
           <input id="b4v_us_min" type="text">
           <input id="b4v_us_max" type="text">
           <input id="b4v_us_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tsi1</span>
+          <span><math><msub><mi>τ</mi><mi>si1</mi></msub></math></span>
           <input id="b4v_tsi1_val" type="text">
           <input id="b4v_tsi1_min" type="text">
           <input id="b4v_tsi1_max" type="text">
           <input id="b4v_tsi1_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>thw</span>
+          <span><math><msub><mi>θ</mi><mi>w</mi></msub></math></span>
           <input id="b4v_thw_val" type="text">
           <input id="b4v_thw_min" type="text">
           <input id="b4v_thw_max" type="text">
           <input id="b4v_thw_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>thvm</span>
+          <span><math><msubsup><mi>θ</mi><mi>v</mi><mi>-</mi></msubsup></math></span>
           <input id="b4v_thvm_val" type="text">
           <input id="b4v_thvm_min" type="text">
           <input id="b4v_thvm_max" type="text">
           <input id="b4v_thvm_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tho</span>
+          <span><math><msub><mi>θ</mi><mi>o</mi></msub></math></span>
           <input id="b4v_tho_val" type="text">
           <input id="b4v_tho_min" type="text">
           <input id="b4v_tho_max" type="text">
           <input id="b4v_tho_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>kwm</span>
+          <span><math><msubsup><mi>k</mi><mi>w</mi><mi>-</mi></msubsup></math></span>
           <input id="b4v_kwm_val" type="text">
           <input id="b4v_kwm_min" type="text">
           <input id="b4v_kwm_max" type="text">
           <input id="b4v_kwm_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>twinf</span>
+          <span><math><msub><mi>τ</mi><msub><mi>w</mi><mi>∞</mi></msub></msub></math></span>
           <input id="b4v_twinf_val" type="text">
           <input id="b4v_twinf_min" type="text">
           <input id="b4v_twinf_max" type="text">
           <input id="b4v_twinf_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>winfstar</span>
+          <span><math><msubsup><mi>w</mi><mi>∞</mi><mi>*</mi></msubsup></math></span>
           <input id="b4v_winfstar_val" type="text">
           <input id="b4v_winfstar_min" type="text">
           <input id="b4v_winfstar_max" type="text">
           <input id="b4v_winfstar_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>uu</span>
+          <span><math><msub><mi>u</mi><mi>u</mi></msub></math></span>
           <input id="b4v_uu_val" type="text">
           <input id="b4v_uu_min" type="text">
           <input id="b4v_uu_max" type="text">
@@ -444,235 +445,235 @@
           <span>Maximum</span>
           <span>Fit?</span>
 
-          <span>tv1p</span>
+          <span><math><msubsup><mi>τ</mi><mi>v1</mi><mi>+</mi></msubsup></math></span>
           <input id="bb_tv1p_val" type="text">
           <input id="bb_tv1p_min" type="text">
           <input id="bb_tv1p_max" type="text">
           <input id="bb_tv1p_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tv1m</span>
+          <span><math><msubsup><mi>τ</mi><mi>v1</mi><mi>-</mi></msubsup></math></span>
           <input id="bb_tv1m_val" type="text">
           <input id="bb_tv1m_min" type="text">
           <input id="bb_tv1m_max" type="text">
           <input id="bb_tv1m_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tv2m</span>
+          <span><math><msubsup><mi>τ</mi><mi>v2</mi><mi>-</mi></msubsup></math></span>
           <input id="bb_tv2m_val" type="text">
           <input id="bb_tv2m_min" type="text">
           <input id="bb_tv2m_max" type="text">
           <input id="bb_tv2m_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tw1p</span>
+          <span><math><msubsup><mi>τ</mi><mi>w1</mi><mi>+</mi></msubsup></math></span>
           <input id="bb_tw1p_val" type="text">
           <input id="bb_tw1p_min" type="text">
           <input id="bb_tw1p_max" type="text">
           <input id="bb_tw1p_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tw2p</span>
+          <span><math><msubsup><mi>τ</mi><mi>w2</mi><mi>+</mi></msubsup></math></span>
           <input id="bb_tw2p_val" type="text">
           <input id="bb_tw2p_min" type="text">
           <input id="bb_tw2p_max" type="text">
           <input id="bb_tw2p_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tw1m</span>
+          <span><math><msubsup><mi>τ</mi><mi>w1</mi><mi>-</mi></msubsup></math></span>
           <input id="bb_tw1m_val" type="text">
           <input id="bb_tw1m_min" type="text">
           <input id="bb_tw1m_max" type="text">
           <input id="bb_tw1m_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tw2m</span>
+          <span><math><msubsup><mi>τ</mi><mi>w2</mi><mi>-</mi></msubsup></math></span>
           <input id="bb_tw2m_val" type="text">
           <input id="bb_tw2m_min" type="text">
           <input id="bb_tw2m_max" type="text">
           <input id="bb_tw2m_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>ts1</span>
+          <span><math><msub><mi>τ</mi><mi>s1</mi></msub></math></span>
           <input id="bb_ts1_val" type="text">
           <input id="bb_ts1_min" type="text">
           <input id="bb_ts1_max" type="text">
           <input id="bb_ts1_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>ts2</span>
+          <span><math><msub><mi>τ</mi><mi>s2</mi></msub></math></span>
           <input id="bb_ts2_val" type="text">
           <input id="bb_ts2_min" type="text">
           <input id="bb_ts2_max" type="text">
           <input id="bb_ts2_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tfi</span>
+          <span><math><msub><mi>τ</mi><mi>fi</mi></msub></math></span>
           <input id="bb_tfi_val" type="text">
           <input id="bb_tfi_min" type="text">
           <input id="bb_tfi_max" type="text">
           <input id="bb_tfi_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>to1</span>
+          <span><math><msub><mi>τ</mi><mi>o1</mi></msub></math></span>
           <input id="bb_to1_val" type="text">
           <input id="bb_to1_min" type="text">
           <input id="bb_to1_max" type="text">
           <input id="bb_to1_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>to2</span>
+          <span><math><msub><mi>τ</mi><mi>o2</mi></msub></math></span>
           <input id="bb_to2_val" type="text">
           <input id="bb_to2_min" type="text">
           <input id="bb_to2_max" type="text">
           <input id="bb_to2_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tso1</span>
+          <span><math><msub><mi>τ</mi><mi>so1</mi></msub></math></span>
           <input id="bb_tso1_val" type="text">
           <input id="bb_tso1_min" type="text">
           <input id="bb_tso1_max" type="text">
           <input id="bb_tso1_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tso2</span>
+          <span><math><msub><mi>τ</mi><mi>so2</mi></msub></math></span>
           <input id="bb_tso2_val" type="text">
           <input id="bb_tso2_min" type="text">
           <input id="bb_tso2_max" type="text">
           <input id="bb_tso2_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tsi1</span>
+          <span><math><msub><mi>τ</mi><mi>si1</mi></msub></math></span>
           <input id="bb_tsi1_val" type="text">
           <input id="bb_tsi1_min" type="text">
           <input id="bb_tsi1_max" type="text">
           <input id="bb_tsi1_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tsi2</span>
+          <span><math><msub><mi>τ</mi><mi>si2</mi></msub></math></span>
           <input id="bb_tsi2_val" type="text">
           <input id="bb_tsi2_min" type="text">
           <input id="bb_tsi2_max" type="text">
           <input id="bb_tsi2_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>twinf</span>
+          <span><math><msub><mi>τ</mi><msub><mi>w</mi><mi>∞</mi></msub></msub></math></span>
           <input id="bb_twinf_val" type="text">
           <input id="bb_twinf_min" type="text">
           <input id="bb_twinf_max" type="text">
           <input id="bb_twinf_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>thv</span>
+          <span><math><msub><mi>θ</mi><mi>v</mi></msub></math></span>
           <input id="bb_thv_val" type="text">
           <input id="bb_thv_min" type="text">
           <input id="bb_thv_max" type="text">
           <input id="bb_thv_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>thvm</span>
+          <span><math><msubsup><mi>θ</mi><mi>v</mi><mi>-</mi></msubsup></math></span>
           <input id="bb_thvm_val" type="text">
           <input id="bb_thvm_min" type="text">
           <input id="bb_thvm_max" type="text">
           <input id="bb_thvm_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>thvinf</span>
+          <span><math><msub><mi>θ</mi><msub><mi>v</mi><mi>∞</mi></msub></msub></math></span>
           <input id="bb_thvinf_val" type="text">
           <input id="bb_thvinf_min" type="text">
           <input id="bb_thvinf_max" type="text">
           <input id="bb_thvinf_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>thw</span>
+          <span><math><msub><mi>θ</mi><mi>w</mi></msub></math></span>
           <input id="bb_thw_val" type="text">
           <input id="bb_thw_min" type="text">
           <input id="bb_thw_max" type="text">
           <input id="bb_thw_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>thwinf</span>
+          <span><math><msub><mi>θ</mi><msub><mi>w</mi><mi>∞</mi></msub></msub></math></span>
           <input id="bb_thwinf_val" type="text">
           <input id="bb_thwinf_min" type="text">
           <input id="bb_thwinf_max" type="text">
           <input id="bb_thwinf_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>thso</span>
+          <span><math><msub><mi>θ</mi><mi>so</mi></msub></math></span>
           <input id="bb_thso_val" type="text">
           <input id="bb_thso_min" type="text">
           <input id="bb_thso_max" type="text">
           <input id="bb_thso_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>thsi</span>
+          <span><math><msub><mi>θ</mi><mi>si</mi></msub></math></span>
           <input id="bb_thsi_val" type="text">
           <input id="bb_thsi_min" type="text">
           <input id="bb_thsi_max" type="text">
           <input id="bb_thsi_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>tho</span>
+          <span><math><msub><mi>θ</mi><mi>o</mi></msub></math></span>
           <input id="bb_tho_val" type="text">
           <input id="bb_tho_min" type="text">
           <input id="bb_tho_max" type="text">
           <input id="bb_tho_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>ths</span>
+          <span><math><msub><mi>θ</mi><mi>s</mi></msub></math></span>
           <input id="bb_ths_val" type="text">
           <input id="bb_ths_min" type="text">
           <input id="bb_ths_max" type="text">
           <input id="bb_ths_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>kwp</span>
+          <span><math><msubsup><mi>k</mi><mi>w</mi><mi>+</mi></msubsup></math></span>
           <input id="bb_kwp_val" type="text">
           <input id="bb_kwp_min" type="text">
           <input id="bb_kwp_max" type="text">
           <input id="bb_kwp_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>kwm</span>
+          <span><math><msubsup><mi>k</mi><mi>w</mi><mi>-</mi></msubsup></math></span>
           <input id="bb_kwm_val" type="text">
           <input id="bb_kwm_min" type="text">
           <input id="bb_kwm_max" type="text">
           <input id="bb_kwm_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>ks</span>
+          <span><math><msub><mi>k</mi><mi>s</mi></msub></math></span>
           <input id="bb_ks_val" type="text">
           <input id="bb_ks_min" type="text">
           <input id="bb_ks_max" type="text">
           <input id="bb_ks_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>kso</span>
+          <span><math><msub><mi>k</mi><mi>so</mi></msub></math></span>
           <input id="bb_kso_val" type="text">
           <input id="bb_kso_min" type="text">
           <input id="bb_kso_max" type="text">
           <input id="bb_kso_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>ksi</span>
+          <span><math><msub><mi>k</mi><mi>si</mi></msub></math></span>
           <input id="bb_ksi_val" type="text">
           <input id="bb_ksi_min" type="text">
           <input id="bb_ksi_max" type="text">
           <input id="bb_ksi_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>uwm</span>
+          <span><math><msubsup><mi>u</mi><mi>w</mi><mi>-</mi></msubsup></math></span>
           <input id="bb_uwm_val" type="text">
           <input id="bb_uwm_min" type="text">
           <input id="bb_uwm_max" type="text">
           <input id="bb_uwm_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>us</span>
+          <span><math><msub><mi>u</mi><mi>s</mi></msub></math></span>
           <input id="bb_us_val" type="text">
           <input id="bb_us_min" type="text">
           <input id="bb_us_max" type="text">
           <input id="bb_us_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>uo</span>
+          <span><math><msub><mi>u</mi><mi>o</mi></msub></math></span>
           <input id="bb_uo_val" type="text">
           <input id="bb_uo_min" type="text">
           <input id="bb_uo_max" type="text">
           <input id="bb_uo_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>uu</span>
+          <span><math><msub><mi>u</mi><mi>u</mi></msub></math></span>
           <input id="bb_uu_val" type="text">
           <input id="bb_uu_min" type="text">
           <input id="bb_uu_max" type="text">
           <input id="bb_uu_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>uso</span>
+          <span><math><msub><mi>u</mi><mi>so</mi></msub></math></span>
           <input id="bb_uso_val" type="text">
           <input id="bb_uso_min" type="text">
           <input id="bb_uso_max" type="text">
           <input id="bb_uso_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>sc</span>
+          <span><math><msub><mi>s</mi><mi>c</mi></msub></math></span>
           <input id="bb_sc_val" type="text">
           <input id="bb_sc_min" type="text">
           <input id="bb_sc_max" type="text">
           <input id="bb_sc_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>wcp</span>
+          <span><math><msubsup><mi>w</mi><mi>c</mi><mi>+</mi></msubsup></math></span>
           <input id="bb_wcp_val" type="text">
           <input id="bb_wcp_min" type="text">
           <input id="bb_wcp_max" type="text">
           <input id="bb_wcp_fit" type="checkbox" class="fit-checkbox" checked="true">
 
-          <span>winfstar</span>
+          <span><math><msubsup><mi>w</mi><mi>∞</mi><mi>*</mi></msubsup></math></span>
           <input id="bb_winfstar_val" type="text">
           <input id="bb_winfstar_min" type="text">
           <input id="bb_winfstar_max" type="text">
@@ -688,13 +689,13 @@
       <br>
       <br>
 
-      <span>Number of beats</span>
+      <span>Number of stimuli</span>
       <input id="data_num_beats" type="text">
 
-      <span>Pre-pacing beats</span>
+      <span>Pre-recording stimuli</span>
       <input id="data_pre_beats" type="text">
 
-      <span>Target Data Sample Interval (ms)</span>
+      <span>Data sample interval (ms)</span>
       <input id="data_sample_interval" type="text">
     </div>
 
@@ -707,7 +708,7 @@
       <label for="stim-biphasic">Biphasic stimulus</label>
 
       <div id="stim-square-section">
-        <label for="stim-dur-square">Stimulus duration</label>
+        <label for="stim-dur-square">Stimulus duration (ms)</label>
         <input id="stim-dur-square" type="text" value="2">
 
         <label for="stim-mag-square">Stimulus magnitude</label>
@@ -715,7 +716,7 @@
       </div>
 
       <div id="stim-biphasic-section" class="data-input-hidden">
-        <label for="stim-dur-biphasic">Stimulus duration</label>
+        <label for="stim-dur-biphasic">Stimulus duration (ms)</label>
         <input id="stim-dur-biphasic" type="text" value="10">
 
         <label for="stim-mag-biphasic">Stimulus magnitude</label>
@@ -730,15 +731,6 @@
         <label for="stim-t-scale-biphasic">Stimulus timescale</label>
         <input id="stim-t-scale-biphasic" type="text" value="0.725">
       </div>
-    </div>
-
-    <div>
-      <span>Fit error:</span>
-      <span id="fit_error"></span>
-    </div>
-
-    <div>
-      <button id="reset_bounds">Reset bounds</button>
     </div>
 
     <div id="hyperparams_div">
@@ -774,6 +766,11 @@
       <br>
       <label for="hyperparam_chi">Constriction coefficient</label>
       <input id="hyperparam_chi" type="number" min="0" value="0.73" step="0.01">
+    </div>
+
+    <div>
+      <span>Fit error:</span>
+      <span id="fit_error"></span>
     </div>
 
     <div id="error_graph_div">
