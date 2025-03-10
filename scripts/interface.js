@@ -64,6 +64,12 @@ define('scripts/interface', [
       },
     };
 
+    static data_type_names = {
+      'voltage': 'Voltage',
+      'apd': 'APD',
+      'calcium': 'Calcium',
+    };
+
     constructor() {
       for (const [model, param_list] of Object.entries(PsoInterface.param_lists)) {
         const model_elements = {};
@@ -218,14 +224,14 @@ define('scripts/interface', [
 
     async getDataFromInput(element) {
       const cl = Number(element.querySelector('.data-cl-input').value);
-      const apd_only = element.querySelector('.data-apd-checkbox').checked;
+      const data_type = element.querySelector('.data-type-select').value;
       const weight = Number(element.querySelector('.data-weight-input').value);
 
       if (cl === 0) {
         throw new Error('No CL entered');
       }
 
-      if (apd_only) {
+      if (data_type === 'apd') {
         const apds = new Float32Array(element.querySelector('.data-apd-input').value.split(','));
         const thresh = Number(element.querySelector('.data-apd-thresh-input').value);
 
@@ -234,7 +240,7 @@ define('scripts/interface', [
         }
 
         return {
-          datatype: 'apds',
+          datatype: data_type,
           data: apds,
           cl: cl,
           apd_thresh: thresh,
@@ -263,7 +269,7 @@ define('scripts/interface', [
       });
 
       return {
-        datatype: 'trace',
+        datatype: data_type,
         data: text,
         cl: cl,
         weight: weight,
@@ -319,13 +325,24 @@ define('scripts/interface', [
       weight_label.appendChild(weight_in);
       weight_in.value = "1";
 
-      const apd_checkbox_label = document.createElement('label');
-      apd_checkbox_label.innerHTML = 'APD only?';
+      const data_select_label = document.createElement('label');
+      data_select_label.innerHTML = 'Data type';
 
-      const apd_checkbox = document.createElement('input');
-      apd_checkbox.setAttribute('type', 'checkbox');
-      apd_checkbox.classList.add('data-apd-checkbox');
-      apd_checkbox_label.appendChild(apd_checkbox);
+      const data_select = document.createElement('select');
+      data_select.setAttribute('name', 'data-type');
+      data_select.classList.add('data-type-select');
+
+      for (const [data_type, data_type_name] of Object.entries(PsoInterface.data_type_names)) {
+        const data_select_option = document.createElement('option');
+        data_select_option.setAttribute('value', data_type);
+        data_select_option.innerHTML = data_type_name;
+        if (data_type === 'voltage') {
+          data_select_option.setAttribute('selected', '');
+        }
+        data_select.appendChild(data_select_option);
+      }
+
+      data_select_label.appendChild(data_select);
 
       const plot_button = document.createElement('button');
       plot_button.setAttribute('type', 'button');
@@ -346,14 +363,14 @@ define('scripts/interface', [
       elem.appendChild(apd_thresh_label);
       elem.appendChild(cl_label);
       elem.appendChild(weight_label);
-      elem.appendChild(apd_checkbox_label);
+      elem.appendChild(data_select_label);
       elem.appendChild(plot_button);
 
       const apd_elements = [apd_label, apd_thresh_label];
       const file_elements = [file_in];
 
       const set_hidden = () => {
-        if (apd_checkbox.checked) {
+        if (data_select.value === 'apd') {
           for (const e of apd_elements) {
             e.classList.remove('data-input-hidden');
           }
@@ -370,7 +387,7 @@ define('scripts/interface', [
         }
       };
 
-      apd_checkbox.addEventListener('change', set_hidden);
+      data_select.addEventListener('change', set_hidden);
 
       set_hidden();
 

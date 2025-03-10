@@ -702,6 +702,7 @@ void main() {
 
         betaCai = 1.0 / (1.0 + (CMDN*KmCMDN)/(pow((KmCMDN+Ca_i), 2.0)) + (TRPN*KmTRPN)/(pow((KmTRPN+Ca_i), 2.0)));
         Ca_i = Ca_i + dt * (betaCai * (-(IpCa + ICab - 2.0 * INaCai) * (Acap/(2.0*FF*vmyo)) - Jup * (vnsr/vmyo) + JdiffCa * (vss/vmyo)));
+        if (data_type == 2) u = Ca_i;
 
         betaCass = 1.0 / (1.0 + (BSR*KmBSR)/(pow((KmBSR+Ca_ss), 2.0)) + (BSL*KmBSL)/(pow((KmBSL+Ca_ss), 2.0)));
         Ca_ss = Ca_ss + dt * (betaCass * (-(ICaL - 2.0 * INaCass) * (Acap/(2.0*FF*vss)) + Jrel * (vjsr/vss) - JdiffCa));

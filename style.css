@@ -139,8 +139,9 @@ canvas {
   margin-left: 0.5em;
 }
 
-.data-input input[type=checkbox] {
+.data-input select {
   margin-right: 2em;
+  margin-left: 0.5em;
 }
 
 .data-input-hidden {

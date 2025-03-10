@@ -371,7 +371,7 @@ void main() {
 
         float prev_u = V;
         V = V - dt * (INa + IK1 + Ito + IKr + IKs + ICaL + INaCa + INaK + IpCa + IpK + IbCa + IbNa + Istim) / Cm;
-        float u = V;
+        float u = data_type == 2 ? Cai : V;
 
         if (step_count > pre_pace_steps) {
             // APD only mode

@@ -88,6 +88,7 @@ require([
         normalization_max,
         normalization_min,
         normalized_align_threshold,
+        normalized_ca_align_threshold,
       }) => ({
         model,
         dt,
@@ -101,6 +102,7 @@ require([
         normalization_max,
         normalization_min,
         normalized_align_threshold,
+        normalized_ca_align_threshold,
       }))(pso.env.simulation),
       'stimulus': structuredClone(pso.env.stimulus),
       'particles': structuredClone(pso.env.particles),
@@ -162,6 +164,7 @@ require([
       hyperparams,
     );
 
+    // TODO: fail if calcium data is provided for non-calcium model
     pso.readData(input_data);
 
     pso.initializeTextures();
@@ -225,7 +228,7 @@ require([
 
   async function displayDataGraph(cl_idx) {
     const input_data = await pso_interface.getAllInputData();
-    if (input_data[cl_idx].datatype !== 'trace') {
+    if (input_data[cl_idx].datatype == 'apd') {
       return;
     }
     const raw_text = input_data[cl_idx].data;
@@ -266,8 +269,7 @@ require([
     let apd_ends = [];
     let align_index = 0;
 
-    if (pso.env.simulation.datatypes[cl_idx] === 'apds') {
-      // apd_starts = apd_start_indices(plotting_sim_data, pso.env.simulation.apd_threshs[cl_idx]).map(x => x / pso.env.simulation.sample_interval);
+    if (pso.env.simulation.datatypes[cl_idx] === 'apd') {
       apd_starts = apd_start_indices(plotting_sim_data, pso.env.simulation.apd_threshs[cl_idx]);
       const apds = pso.env.simulation.trimmed_data[cl_idx];
       apd_ends = apd_starts.map((x, idx) => x + (apds[idx] || 0) / pso.env.simulation.sample_interval);
@@ -285,7 +287,7 @@ require([
     const interval = Number(pso_interface.data_sample_interval.value);
 
     graph.clearGraph();
-    if (pso.env.simulation.datatypes[cl_idx] === 'apds') {
+    if (pso.env.simulation.datatypes[cl_idx] === 'apd') {
       for (let i = 0; i < apd_starts.length; ++i) {
         graph.runApdGraph(apd_starts[i], apd_ends[i], pso.env.simulation.apd_threshs[cl_idx], [0, 0, 0], sim_length, scale, 0);
       }

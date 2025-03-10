@@ -80,6 +80,12 @@ define('scripts/pso', [
       this.gl_helper = new GlHelper(canvas);
     }
 
+    static data_type_map = {
+      'voltage': 0,
+      'apd': 1,
+      'calcium': 2,
+    };
+
     static getEnv() {
       const env = {
         simulation: {
@@ -103,6 +109,7 @@ define('scripts/pso', [
           normalization_max: 1.0,
           normalization_min: 0.0,
           normalized_align_threshold: 0.15,
+          normalized_ca_align_threshold: 0.15,
         },
         stimulus: {
           stim_dur: 10.0,
@@ -390,7 +397,7 @@ define('scripts/pso', [
       const delta = 0.001;
 
       for (let i = 0; i < raw_input_data.length; ++i) {
-        if (datatypes[i] === 'apds') {
+        if (datatypes[i] === 'apd') {
           const apd_data = raw_input_data[i];
 
           const data_array = new Float32Array(4 * apd_data.length);
@@ -402,7 +409,8 @@ define('scripts/pso', [
           data_arrays.push(data_array);
           align_thresh.push(0);
           all_full_normalized_data.push(apd_data);
-        } else if (datatypes[i] === 'trace') {
+        } else {
+          const nthresh = datatypes[i] === 'calcium' ? this.env.simulation.normalized_ca_align_threshold : this.env.simulation.normalized_align_threshold;
           const raw_text = raw_input_data[i];
 
           const split_data = raw_text.split('\n');
@@ -413,7 +421,7 @@ define('scripts/pso', [
 
           const data_max = Math.max(...full_normalized_data);
           const data_min = Math.min(...full_normalized_data);
-          const actual_align_thresh = (this.env.simulation.normalized_align_threshold-data_min)/(data_max-data_min);
+          const actual_align_thresh = (nthresh-data_min)/(data_max-data_min);
           const first_compare_index = full_normalized_data.findIndex(number => number > actual_align_thresh);
 
           const left_trimmed_data = full_normalized_data.slice(first_compare_index);
@@ -735,7 +743,7 @@ define('scripts/pso', [
             ['pre_beats', '1i', () => this.env.simulation.pre_beats],
             ['align_thresh', '1f', (cl_idx) => this.env.simulation.align_thresh[cl_idx]],
             ['sample_interval', '1f', () => this.env.simulation.sample_interval],
-            ['data_type', '1i', (cl_idx) => this.env.simulation.datatypes[cl_idx] === 'apds' ? 1 : 0],
+            ['data_type', '1i', (cl_idx) => Pso.data_type_map[this.env.simulation.datatypes[cl_idx]]],
             ['apd_thresh', '1f', (cl_idx) => this.env.simulation.apd_threshs[cl_idx]],
             ['weight', '1f', (cl_idx) => this.env.simulation.weights[cl_idx]],
           ],
