@@ -414,7 +414,7 @@ define('scripts/pso', [
           const data_max = Math.max(...full_normalized_data);
           const data_min = Math.min(...full_normalized_data);
           const actual_align_thresh = (this.env.simulation.normalized_align_threshold-data_min)/(data_max-data_min);
-          const first_compare_index = full_normalized_data.findIndex(number => actual_align_thresh);
+          const first_compare_index = full_normalized_data.findIndex(number => number > actual_align_thresh);
 
           const left_trimmed_data = full_normalized_data.slice(first_compare_index);
 
