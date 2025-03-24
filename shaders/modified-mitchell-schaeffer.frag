@@ -11,7 +11,7 @@ layout (location = 0) out vec4 error_texture;
 in vec2 cc;
 
 uniform float dt, period;
-uniform int num_beats, pre_beats, data_type;
+uniform int num_beats, pre_beats, data_type, err_type;
 uniform float h_init;
 uniform float align_thresh, sample_interval, apd_thresh, weight;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
@@ -115,7 +115,7 @@ void main() {
                     APD_end = (x0*(y1 - apd_thresh) + x1*(apd_thresh - y0)) / (y1-y0);
                     float sim_APD = APD_end - APD_start;
                     float target_APD = texelFetch(data_texture, ivec2(data_index++, 0), 0).r;
-                    error += (target_APD - sim_APD) * (target_APD - sim_APD);
+                    error += err_type == 1 ? abs(target_APD - sim_APD) : (target_APD - sim_APD) * (target_APD - sim_APD);
                     compared_points += 1;
                 }
             }
@@ -129,7 +129,7 @@ void main() {
                 // Measure curve error
                 if (first_align_upstroke && mod(float(step_count - start_comp), compare_stride) == 0.0) {
                     float actual = texelFetch(data_texture, ivec2(data_index++, 0), 0).r;
-                    error += (v - actual)*(v - actual);
+                    error += err_type == 1 ? abs(v - actual) : (v - actual) * (v - actual);
                     compared_points += 1;
                 }
             }
@@ -153,7 +153,7 @@ void main() {
         // simulation, add them as raw error.
         for(; data_index < num_data_points; data_index++) {
             float missing_APD = texelFetch(data_texture, ivec2(data_index, 0), 0).r;
-            error += missing_APD*missing_APD;
+            error += err_type == 1 ? missing_APD : missing_APD * missing_APD;
             compared_points += 1;
         }
     }

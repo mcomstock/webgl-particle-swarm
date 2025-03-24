@@ -86,6 +86,11 @@ define('scripts/pso', [
       'calcium': 2,
     };
 
+    static err_type_map = {
+      'square': 0,
+      'abs': 1,
+    };
+
     static getEnv() {
       const env = {
         simulation: {
@@ -110,6 +115,7 @@ define('scripts/pso', [
           normalization_min: 0.0,
           normalized_align_threshold: 0.15,
           normalized_ca_align_threshold: 0.15,
+          err_type: 'abs',
         },
         stimulus: {
           stim_dur: 10.0,
@@ -746,6 +752,7 @@ define('scripts/pso', [
             ['data_type', '1i', (cl_idx) => Pso.data_type_map[this.env.simulation.datatypes[cl_idx]]],
             ['apd_thresh', '1f', (cl_idx) => this.env.simulation.apd_threshs[cl_idx]],
             ['weight', '1f', (cl_idx) => this.env.simulation.weights[cl_idx]],
+            ['err_type', '1i', () => Pso.err_type_map[this.env.simulation.err_type]],
           ],
           out: [final ? this.simulation_texture : this.error_texture],
           run: final ? this.gl_helper.runFinal : this.gl_helper.runSimulation,

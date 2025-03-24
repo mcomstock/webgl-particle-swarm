@@ -89,6 +89,7 @@ require([
         normalization_min,
         normalized_align_threshold,
         normalized_ca_align_threshold,
+        err_type,
       }) => ({
         model,
         dt,
@@ -103,6 +104,7 @@ require([
         normalization_min,
         normalized_align_threshold,
         normalized_ca_align_threshold,
+        err_type,
       }))(pso.env.simulation),
       'stimulus': structuredClone(pso.env.stimulus),
       'particles': structuredClone(pso.env.particles),
