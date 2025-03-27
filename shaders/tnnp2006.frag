@@ -19,18 +19,21 @@ uniform float sample_interval, apd_thresh, weight;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
 uniform bool stim_biphasic;
 
-float RR = 8314.3;
-float T = 310.0;
-float FF = 96486.7;
-float Cm = 1.0;
-float SS = 0.2;
-float rho = 162.0;
-float Vc = 0.016404;
-float Vsr = 0.001094;
-float Vss = 0.00005468;
-float Ko = 5.4;
-float Nao = 140.0;
-float Cao = 2.0;
+uniform sampler2D table;
+uniform int table_shift, table_npoints;
+uniform float table_vmin, table_vmax, table_vekmin, table_vekmax;
+
+const float RR = 8314.3;
+const float T = 310.0;
+const float FF = 96486.7;
+const float SS = 0.2;
+const float rho = 162.0;
+const float Vc = 0.016404;
+const float Vsr = 0.001094;
+const float Vss = 0.00005468;
+const float Ko = 5.4;
+const float Nao = 140.0;
+const float Cao = 2.0;
 // float GNa = 14.838;
 // float GK1 = 5.405;
 #if defined ENDO
@@ -44,41 +47,50 @@ float Cao = 2.0;
 #else
 // float GKs = 0.392;
 #endif
-float pKNa = 0.03;
+const float pKNa = 0.03;
 // float GCaL = 3.98e-5;
 // float kNaCa = 1000.0;
-float gamma = 0.35;
-float KmCa = 1.38;
-float KmNai = 87.5;
-float ksat = 0.1;
-float alpha = 2.5;
+const float gamma = 0.35;
+const float KmCa = 1.38;
+const float KmNai = 87.5;
+const float ksat = 0.1;
+const float alpha = 2.5;
 // float PNaK = 2.724;
-float KmK = 1.0;
-float KmNa = 40.0;
+const float KmK = 1.0;
+const float KmNa = 40.0;
 // float GpK = 0.0146;
 // float GpCa = 0.1238;
-float KpCa = 0.0005;
+const float KpCa = 0.0005;
 // float GbNa = 0.00029;
 // float GbCa = 0.000592;
-float Vmaxup = 0.006375;
-float Kup = 0.00025;
-float Vrel = 0.102;
-float k1p = 0.15;
-float k2p = 0.045;
-float k3 = 0.06;
-float k4 = 0.005;
-float EC = 1.5;
-float maxsr = 2.5;
-float minsr = 1.0;
-float Vleak = 0.00036;
-float Vxfer = 0.0038;
-float Bufc = 0.2;
-float Kbufc = 0.001;
-float Bufsr = 10.0;
-float Kbufsr = 0.3;
-float Bufss = 0.4;
-float Kbufss = 0.00025;
-float capacitance = 0.185;
+const float Vmaxup = 0.006375;
+const float Kup = 0.00025;
+const float Vrel = 0.102;
+const float k1p = 0.15;
+const float k2p = 0.045;
+const float k3 = 0.06;
+const float k4 = 0.005;
+const float EC = 1.5;
+const float maxsr = 2.5;
+const float minsr = 1.0;
+const float Vleak = 0.00036;
+const float Vxfer = 0.0038;
+const float Bufc = 0.2;
+const float Kbufc = 0.001;
+const float Bufsr = 10.0;
+const float Kbufsr = 0.3;
+const float Bufss = 0.4;
+const float Kbufss = 0.00025;
+const float capacitance = 0.185;
+
+const float Ko54sqrt = sqrt(Ko/5.4);
+const float rtof = RR*T/FF;
+const float invvcf = 1.0 / (Vc*FF);
+const float vsrovc = Vsr/Vc;
+const float vsrovss = Vsr/Vss;
+const float vcovss = Vc/Vss;
+const float invvssf = 1.0 / (Vss*FF);
+const float ecsq = EC * EC;
 
 float biphasic_stim_f(const float t) {
     float a = (t/stim_t_scale - stim_offset_2);
@@ -127,10 +139,7 @@ void main() {
     float m, h, j, r, s, xr1, xr2, xs, d, f, f2, fcass;
 
     float m_inf, h_inf, j_inf, xs_inf, d_inf, f_inf, f2_inf, fcass_inf, r_inf, s_inf, xr1_inf, xr2_inf, xK1_inf;
-    float alpha_m, alpha_h, alpha_j, alpha_xs, alpha_d, alpha_f, alpha_f2, alpha_xr1, alpha_xr2, alpha_K1;
-    float beta_m, beta_h, beta_j, beta_xs, beta_d, beta_f, beta_f2, beta_xr1, beta_xr2, beta_K1;
-    float tau_m, tau_h, tau_j, tau_xs, tau_d, tau_f, tau_f2, tau_fcass, tau_r, tau_s, tau_xr1, tau_xr2;
-    float gamma_d, gamma_f, gamma_f2;
+    float tau_fcass;
 
     float Iion, INa, IK1, Ito, IKr, IKs, ICaL, INaCa, INaK, IpCa, IpK, IbCa, IbNa, Istim;
     float Ileak, Iup, Irel, Ixfer;
@@ -141,11 +150,18 @@ void main() {
 
     float time;
 
+    float Kibase, Kidiff;
+    float Naibase, Naidiff;
+
+    Kibase = 136.0;
+    Naibase = 9.413;
 #if defined EPI
     V = -85.46;
     Rhat = 0.9891;
-    Nai = 9.293;
-    Ki = 136.2;
+    // Nai = 9.293;
+    Naidiff = 9.293 - Naibase;
+    // Ki = 136.2;
+    Kidiff = 0.2;
     Cai = 0.0001156;
     CaSS = 0.002331;
     CaSR = 3.432;
@@ -160,8 +176,10 @@ void main() {
 #elif defined MYO
     V = -84.53;
     Rhat = 0.9874;
-    Nai = 9.322;
-    Ki = 136.0;
+    // Nai = 9.322;
+    Naidiff = 9.322 - Naibase;
+    // Ki = 136.0;
+    Kidiff = 0.0;
     Cai = 0.0001156;
     CaSS = 0.002331;
     CaSR = 4.130;
@@ -176,8 +194,10 @@ void main() {
 #else
     V = -84.70;
     Rhat = 0.9891;
-    Nai = 9.413;
-    Ki = 136.1;
+    // Nai = 9.413;
+    Naidiff = 9.413 - Naibase;
+    // Ki = 136.1;
+    Kidiff = 0.1;
     Cai = 0.0001021;
     CaSS = 0.002111;
     CaSR = 3.385;
@@ -210,9 +230,88 @@ void main() {
 
     bool activated = false;
 
+    float vidxint, vekidxint, wv1, wv2, wvek1, wvek2;
+    int vidx1, vidx2, vekidx1, vekidx2, table_idx1, table_idx2;
+    ivec2 table_idx1_2d, table_idx2_2d;
+    vec4 table_val1, table_val2;
+
+    float tau_m_exp, tau_h_exp, tau_j_exp, tau_xs_exp, tau_d_exp, tau_f_exp, tau_f2_exp, tau_r_exp, tau_s_exp, tau_xr1_exp, tau_xr2_exp;
+    float ICaL_CaSS_coeff, ICaL_Cao, IpK_coeff, INaCa_Nai_coeff, INaCa_Cai_coeff, INaK_coeff;
+
+    float u, prev_u;
+    float save_ca = float(data_type == 2);
+    float save_v = 1.0 - save_ca;
+
+    float stim, stim_t;
+
+    int table_mask = (1 << table_shift) - 1;
+    float invvrange = float(table_npoints) / (table_vmax - table_vmin);
+    float invvekrange = float(table_npoints) / (table_vekmax - table_vekmin);
+
     for (int step_count = 1; step_count <= num_steps; ++step_count) {
-        float stim = 0.0;
-        float stim_t = mod(float(step_count)*dt, period);
+        /*
+         * Table retrieval
+         */
+
+        // Indexing
+        vidxint = invvrange * (V - table_vmin);
+        vidx1 = int(round(vidxint));
+
+#define SET_TABLE_VALS(SEQ, IDX1) {                             \
+            table_idx1 = (SEQ) * table_npoints + (IDX1);        \
+            table_idx1_2d[0] = table_idx1 & table_mask;         \
+            table_idx1_2d[1] = table_idx1 >> table_shift;       \
+            table_val1 = texelFetch(table, table_idx1_2d, 0);   \
+        }
+
+        SET_TABLE_VALS(0, vidx1);
+        m_inf = table_val1[0];
+        tau_m_exp = table_val1[1];
+        h_inf = table_val1[2];
+        tau_h_exp = table_val1[3];
+
+        SET_TABLE_VALS(1, vidx1);
+        j_inf = table_val1[0];
+        tau_j_exp = table_val1[1];
+        xs_inf = table_val1[2];
+        tau_xs_exp = table_val1[3];
+
+        SET_TABLE_VALS(2, vidx1);
+        d_inf = table_val1[0];
+        tau_d_exp = table_val1[1];
+        f_inf = table_val1[2];
+        tau_f_exp = table_val1[3];
+
+        SET_TABLE_VALS(3, vidx1);
+        f2_inf = table_val1[0];
+        tau_f2_exp = table_val1[1];
+        r_inf = table_val1[2];
+        tau_r_exp = table_val1[3];
+
+        SET_TABLE_VALS(4, vidx1);
+        s_inf = table_val1[0];
+        tau_s_exp = table_val1[1];
+        xr1_inf = table_val1[2];
+        tau_xr1_exp = table_val1[3];
+
+        SET_TABLE_VALS(5, vidx1);
+        xr2_inf = table_val1[0];
+        tau_xr2_exp = table_val1[1];
+        ICaL_CaSS_coeff = table_val1[2];
+        ICaL_Cao = table_val1[3];
+
+        SET_TABLE_VALS(6, vidx1);
+        IpK_coeff = table_val1[0];
+        INaCa_Nai_coeff = table_val1[1];
+        INaCa_Cai_coeff = table_val1[2];
+        INaK_coeff = table_val1[3];
+
+        /*
+         * End table retrieval
+         */
+
+        stim = 0.0;
+        stim_t = mod(float(step_count)*dt, period);
         if (stim_t < stim_dur) {
             if (stim_biphasic) {
                 stim = biphasic_stim_f(stim_t);
@@ -223,155 +322,112 @@ void main() {
 
         Istim = stim;
 
-        m_inf = 1.0 / (1.0 + exp((-56.86 - V)/9.03));
-        m_inf = m_inf * m_inf;
-        alpha_m = 1.0 / (1.0 + exp((-60.0 - V)/5.0));
-        beta_m = (0.1 / (1.0 + exp((V + 35.0)/5.0))) + (0.1 / (1.0 + exp((V - 50.0)/200.0)));
-        tau_m = alpha_m * beta_m;
-        m = m_inf - (m_inf - m) * exp(-dt/tau_m);
-
-        h_inf = 1.0 / (1.0 + exp((V + 71.55)/7.43));
-        h_inf = h_inf * h_inf;
-        if (V >= -40.0) {
-            alpha_h = 0.0;
-            beta_h = 0.77 / (0.13 * (1.0 + exp(-(V + 10.66)/11.1)));
-        } else {
-            alpha_h = 0.057 * exp(-(V + 80.0)/6.8);
-            beta_h = 2.7 * exp(0.079 * V) + 3.1e5 * exp(0.3485 * V);
+        // TODO check performance
+        if (abs(Kidiff) > 1.0) {
+            Kibase = Kibase + Kidiff;
+            Kidiff = 0.0;
         }
-        tau_h = 1.0 / (alpha_h + beta_h);
-        h = h_inf - (h_inf - h) * exp(-dt/tau_h);
+        Ki = Kibase + Kidiff;
 
-        j_inf = 1.0 / (1.0 + exp((V + 71.55)/7.43));
-        j_inf = j_inf * j_inf;
-        if (V >= -40.0) {
-            alpha_j = 0.0;
-            beta_j = (0.6 * exp(0.057 * V)) / (1.0 + exp(-0.1*(V+32.0)));
-        } else {
-            alpha_j = ((-2.5428e4*exp(0.2444*V)-6.948e-6*exp(-0.04391*V))*(V+37.78)) / (1.0 + exp(0.311*(V+79.23)));
-            beta_j = (0.02424*exp(-0.01052*V)) / (1.0 + exp(-0.1378*(V+40.14)));
+        if (abs(Naidiff) > 0.1) {
+            Naibase = Naibase + Naidiff;
+            Naidiff = 0.0;
         }
-        tau_j = 1.0 / (alpha_j + beta_j);
-        j = j_inf - (j_inf - j) * exp(-dt/tau_j);
+        Nai = Naibase + Naidiff;
 
-        xs_inf = 1.0 / (1.0 + exp((-5.0 - V)/14.0));
-        alpha_xs = 1400.0 / sqrt(1.0 + exp((5.0-V)/6.0));
-        beta_xs = 1.0 / (1.0 + exp((V-35.0)/15.0));
-        tau_xs = alpha_xs * beta_xs + 80.0;
-        xs = xs_inf - (xs_inf - xs) * exp(-dt/tau_xs);
+        m = m_inf - (m_inf - m) * tau_m_exp;
+        h = h_inf - (h_inf - h) * tau_h_exp;
+        j = j_inf - (j_inf - j) * tau_j_exp;
+        xs = xs_inf - (xs_inf - xs) * tau_xs_exp;
+        d = d_inf - (d_inf - d) * tau_d_exp;
+        f = f_inf - (f_inf - f) * tau_f_exp;
+        f2 = f2_inf - (f2_inf - f2) * tau_f2_exp;
 
-        d_inf = 1.0 / (1.0 + exp((-8.0 - V)/7.5));
-        alpha_d = 1.4 / (1.0 + exp((-35.0-V)/13.0)) + 0.25;
-        beta_d = 1.4 / (1.0 + exp((V+5.0)/5.0));
-        gamma_d = 1.0 / (1.0 + exp((50.0-V)/20.0));
-        tau_d = alpha_d * beta_d + gamma_d;
-        d = d_inf - (d_inf - d) * exp(-dt/tau_d);
-
-        f_inf = 1.0 / (1.0 + exp((V+20.0)/7.0));
-        alpha_f = 1102.5 * exp(-((V+27.0)/15.0)*((V+27.0)/15.0));
-        beta_f = 200.0 / (1.0 + exp((13.0-V)/10.0));
-        gamma_f = 180.0 / (1.0 + exp((V+30.0)/10.0)) + 20.0;
-        tau_f = alpha_f + beta_f + gamma_f;
-        f = f_inf - (f_inf - f) * exp(-dt/tau_f);
-
-        f2_inf = 0.67 / (1.0 + exp((V+35.0)/7.0)) + 0.33;
-        // The equation here differs from the paper (original commented out)
-        // alpha_f2 = 600.0 * exp(-((V+25.0)*(V+25.0))/170.0)
-        alpha_f2 = 600.0 * exp(-((V+25.0)*(V+25.0))/49.0);
-        beta_f2 = 31.0 / (1.0 + exp((25.0 - V)/10.0));
-        gamma_f2 = 16.0 / (1.0 + exp((V+30.0)/10.0));
-        tau_f2 = alpha_f2 + beta_f2 + gamma_f2;
-        f2 = f2_inf - (f2_inf - f2) * exp(-dt/tau_f2);
-
-        fcass_inf = 0.6 / (1.0 + (CaSS/0.05)*(CaSS/0.05)) + 0.4;
-        tau_fcass = 80.0 / (1.0 + (CaSS/0.05)*(CaSS/0.05)) + 2.0;
+        fcass_inf = 0.6 / (1.0 + 400.0*CaSS*CaSS) + 0.4;
+        tau_fcass = 80.0 / (1.0 + 400.0*CaSS*CaSS) + 2.0;
         fcass = fcass_inf - (fcass_inf - fcass) * exp(-dt/tau_fcass);
 
-        r_inf = 1.0 / (1.0 + exp((20.0 - V)/6.0));
-        tau_r = 9.5 * exp(-(V+40.0)*(V+40.0)/1800.0) + 0.8;
-        r = r_inf - (r_inf - r) * exp(-dt/tau_r);
+        r = r_inf - (r_inf - r) * tau_r_exp;
+        s = s_inf - (s_inf - s) * tau_s_exp;
+        xr1 = xr1_inf - (xr1_inf - xr1) * tau_xr1_exp;
+        xr2 = xr2_inf - (xr2_inf - xr2) * tau_xr2_exp;
 
-#if defined ENDO
-        s_inf = 1.0 / (1.0 + exp((V+28.0)/5.0));
-        tau_s = 1000.0 * exp(-(V+67.0)*(V+67.0)/1000.0) + 8.0;
-#else
-        s_inf = 1.0 / (1.0 + exp((V+20.0)/5.0));
-        tau_s = 85.0 * exp(-(V+45.0)*(V+45.0)/320.0) + 5.0 / (1.0 + exp((V-20.0)/5.0)) + 3.0;
-#endif
-        s = s_inf - (s_inf - s) * exp(-dt/tau_s);
+        ENa = rtof * log(Nao/Nai);
+        EK = rtof * log(Ko/Ki);
+        ECa = 0.5*rtof * log(Cao/Cai);
+        EKs = rtof * log((Ko+pKNa*Nao)/(Ki+pKNa*Nai));
 
-        xr1_inf = 1.0 / (1.0 + exp((-26.0 - V)/7.0));
-        alpha_xr1 = 450.0 / (1.0 + exp((-45.0 - V)/10.0));
-        beta_xr1 = 6.0 / (1.0 + exp((V+30.0)/11.5));
-        tau_xr1 = alpha_xr1 * beta_xr1;
-        xr1 = xr1_inf - (xr1_inf - xr1) * exp(-dt/tau_xr1);
+        /*
+         * V-EK table retrieval (must occur after EK is computed)
+         */
 
-        xr2_inf = 1.0 / (1.0 + exp((V+88.0)/24.0));
-        alpha_xr2 = 3.0 / (1.0 + exp((-60.0 - V)/20.0));
-        beta_xr2 = 1.12 / (1.0 + exp((V-60.0)/20.0));
-        tau_xr2 = alpha_xr2 * beta_xr2;
-        xr2 = xr2_inf - (xr2_inf - xr2) * exp(-dt/tau_xr2);
+        // Indexing
+        vekidxint = invvekrange * ((V - EK) - table_vekmin);
+        vekidx1 = int(round(vekidxint));
 
-        ENa = (RR*T/FF) * log(Nao/Nai);
-        EK = (RR*T/FF) * log(Ko/Ki);
-        ECa = (RR*T/(2.0*FF)) * log(Cao/Cai);
-        EKs = (RR*T/FF) * log((Ko+pKNa*Nao)/(Ki+pKNa*Nai));
+        // Lookup
+        SET_TABLE_VALS(7, vekidx1);
+        xK1_inf = table_val1[0];
 
-        ICaL = GCaL * d * f * f2 * fcass * 4.0 * (((V-15.0)*FF*FF)/(RR*T)) * ((0.25 * CaSS * exp(2.0 * (V-15.0) * FF/(RR*T)) - Cao) / (exp(2.0 * (V-15.0) * FF/(RR*T)) - 1.0));
+        /*
+         * End V-EK table retrieval
+         */
+
+        ICaL = GCaL * d * f * f2 * fcass * (ICaL_CaSS_coeff * CaSS - ICaL_Cao);
 
         IKs = GKs * xs * xs * (V - EKs);
         INa = GNa * m * m * m * h * j * (V - ENa);
         Ito = Gto * r * s * (V - EK);
-        IKr = GKr * sqrt(Ko/5.4) * xr1 * xr2 * (V - EK);
+        IKr = GKr * Ko54sqrt * xr1 * xr2 * (V - EK);
 
-        alpha_K1 = 0.1 / (1.0 + exp(0.06*((V-EK)-200.0)));
-        beta_K1 = (3.0 * exp(0.0002*((V-EK)+100.0)) + exp(0.1*((V-EK)-10.0))) / (1.0 + exp(-0.5*(V-EK)));
-        xK1_inf = alpha_K1 / (alpha_K1 + beta_K1);
-        // Note that the sqrt term is 1 with the default parameterization
-        IK1 = GK1 * sqrt(Ko/5.4) * xK1_inf * (V-EK);
+        IK1 = GK1 * Ko54sqrt * xK1_inf * (V-EK);
 
-        INaCa = kNaCa * (exp(gamma*V*FF/(RR*T))*Nai*Nai*Nai*Cao - exp((gamma-1.0)*V*FF/(RR*T))*Nao*Nao*Nao*Cai*alpha) / ((KmNai*KmNai*KmNai + Nao*Nao*Nao) * (KmCa+Cao) * (1.0 + ksat*exp((gamma-1.0)*V*FF/(RR*T))));
+        INaCa = kNaCa * (INaCa_Nai_coeff*Nai*Nai*Nai - INaCa_Cai_coeff*Cai);
         INaK = PNaK*Ko*Nai / ((Ko+KmK) * (Nai+KmNa) * (1.0 + 0.1245*exp(-0.1*V*FF/(RR*T)) + 0.0353 * exp(-V*FF/(RR*T))));
         IpCa = GpCa * Cai / (KpCa + Cai);
-        IpK = GpK * (V-EK) / (1.0 + exp((25.0-V)/5.98));
+        IpK = GpK * (V-EK) * IpK_coeff;
         IbNa = GbNa * (V - ENa);
         IbCa = GbCa * (V - ECa);
 
-        Nai = Nai + dt * (-(INa + IbNa + 3.0*(INaK+INaCa)) / (Vc*FF)) * capacitance;
-        Ki = Ki + dt * (-(IK1 + Ito + IKr + IKs + (-2.0*INaK) + IpK + Istim) / (Vc*FF)) * capacitance;
+        // Track differences to avoid precision issue of adding small differences to large values
+        Naidiff = Naidiff + dt * (-(INa + IbNa + 3.0*(INaK+INaCa)) * invvcf) * capacitance;
+        Kidiff = Kidiff + dt * (-(IK1 + Ito + IKr + IKs + (-2.0*INaK) + IpK + Istim) * invvcf) * capacitance;
 
-        kcasr = maxsr - ((maxsr - minsr) / (1.0 + (EC/CaSR)*(EC/CaSR)));
+        kcasr = maxsr - ((maxsr - minsr) / (1.0 + ecsq/(CaSR*CaSR)));
         k1 = k1p / kcasr;
         k2 = k2p * kcasr;
         Rhat = Rhat + dt * (k4 * (1.0 - Rhat) - k2 * CaSS * Rhat);
         O = (k1 * CaSS * CaSS * Rhat) / (k3 + k1 * CaSS * CaSS);
 
         Ileak = Vleak * (CaSR - Cai);
-        Iup = Vmaxup / (1.0 + (Kup * Kup)/(Cai * Cai));
+        Iup = Kup / Cai;
+        Iup = Vmaxup / (1.0 + Iup*Iup);
         Irel = Vrel * O * (CaSR - CaSS);
         Ixfer = Vxfer * (CaSS - Cai);
 
         Caibufc = (Cai * Bufc) / (Cai + Kbufc);
-        dCaitotal = dt * (-((IbCa + IpCa - 2.0*INaCa) * capacitance)/(2.0*Vc*FF) + (Vsr/Vc)*(Ileak-Iup) + Ixfer);
+        dCaitotal = dt * (-((IbCa + IpCa - 2.0*INaCa) * capacitance) * 0.5 * invvcf + vsrovc*(Ileak-Iup) + Ixfer);
         bi = Bufc - Caibufc - dCaitotal - Cai + Kbufc;
         ci = Kbufc * (Caibufc + dCaitotal + Cai);
-        Cai = (sqrt(bi*bi + 4.0 * ci) - bi) / 2.0;
+        // Use a different form of the equation to avoid cancelation for very small bi/ci values
+        Cai = 4.0 * (ci / (bi * bi));
+        Cai = (0.5 * bi * Cai) / (sqrt(1.0 + Cai) + 1.0);
 
         Casrbufsr = (CaSR * Bufsr) / (CaSR + Kbufsr);
         dCaSRtotal = dt * (Iup - Ileak - Irel);
         bsr = Bufsr - Casrbufsr - dCaSRtotal - CaSR + Kbufsr;
         csr = Kbufsr * (Casrbufsr + dCaSRtotal + CaSR);
-        CaSR = (sqrt(bsr*bsr + 4.0 * csr) - bsr) / 2.0;
+        CaSR = (sqrt(bsr*bsr + 4.0 * csr) - bsr) * 0.5;
 
         Cassbufss = (CaSS * Bufss) / (CaSS + Kbufss);
-        dCaSStotal = dt * (-((ICaL * capacitance) / (2.0 * Vss * FF)) + (Vsr/Vss)*Irel - (Vc/Vss)*Ixfer);
+        dCaSStotal = dt * (-((ICaL * capacitance) * 0.5 * invvssf) + vsrovss*Irel - vcovss*Ixfer);
         bss = Bufss - Cassbufss - dCaSStotal - CaSS + Kbufss;
         css = Kbufss * (Cassbufss + dCaSStotal + CaSS);
-        CaSS = (sqrt(bss*bss + 4.0 * css) - bss) / 2.0;
+        CaSS = (sqrt(bss*bss + 4.0 * css) - bss) * 0.5;
 
-        float prev_u = V;
-        V = V - dt * (INa + IK1 + Ito + IKr + IKs + ICaL + INaCa + INaK + IpCa + IpK + IbCa + IbNa + Istim) / Cm;
-        float u = data_type == 2 ? Cai : V;
+        prev_u = V;
+        V = V - dt * (INa + IK1 + Ito + IKr + IKs + ICaL + INaCa + INaK + IpCa + IpK + IbCa + IbNa + Istim);
+        u = save_ca * Cai + save_v * V;
 
         if (step_count > pre_pace_steps) {
             // APD only mode

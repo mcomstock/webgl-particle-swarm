@@ -16,6 +16,10 @@ uniform float sample_interval, apd_thresh, weight;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
 uniform bool stim_biphasic;
 
+uniform sampler2D table;
+uniform int table_shift, table_npoints;
+uniform float table_vmin, table_vmax, table_vekmin, table_vekmax;
+
 // Model parameters
 const float RR = 8314.0;
 const float TT = 310.0;
@@ -29,6 +33,9 @@ const float R_CG = 2.0;
 const float Na_o = 140.0;
 const float Ca_o = 1.8;
 const float K_o = 5.4;
+
+const float sqrtko54 = sqrt(K_o/5.4);
+const float sqrtko = sqrt(K_o);
 
 const float PRNaK = 0.01833;
 
@@ -45,8 +52,6 @@ const float vjsr = 0.0048 * vcell;
 const float vss = 0.02 * vcell;
 
 const float KmCaMK = 0.15;
-// const float GNa = 14.838;
-// const float Gtobar = 0.02;
 const float Affast = 0.6;
 const float Afslow = 1.0 - Affast;
 const float taujCa = 75.0;
@@ -147,6 +152,47 @@ const float KmBSR = 0.00087;
 const float KmBSL = 0.0087;
 const float KmCSQN = 0.8;
 
+const float invKKi = 1.0/KKi;
+const float b3denom = 1.0 / (1.0 + MgATP/KMgATP);
+const float inv15 = 1.0 / 15.0;
+const float invtautr = 1.0 / tautr;
+const float invtaudiffna = 1.0 / taudiffNa;
+const float invtaudiffca = 1.0 / taudiffCa;
+const float invtaudiffk = 1.0 / taudiffK;
+const float invkNa1 = 1.0 / kNa1;
+const float invkNa2 = 1.0 / kNa2;
+const float invkNa3 = 1.0 / kNa3;
+const float invKHP = 1.0 / KHP;
+const float invKNaP = 1.0 / KNaP;
+const float invKKP = 1.0 / KKP;
+
+const float zcafgcai = zCa * FF * gammaCai;
+const float zcafgcaocao = zCa * FF * gammaCao * Ca_o;
+const float znafgnai = zNa * FF * gammaNai;
+const float znafgnaonao = zCa * FF * gammaNao * Na_o;
+const float zkfgki = zK * FF * gammaKi;
+const float zkfgkoko = zK * FF * gammaKo * K_o;
+const float zca2frtgcai = zCa * zCa * FFRT * gammaCai;
+const float zna2frtgnai = zNa * zNa * FFRT * gammaNai;
+const float zk2frtgki = zK * zK * FFRT * gammaKi;
+const float zca2frtgcaocao = zCa * zCa * FFRT * gammaCao * Ca_o;
+const float zna2frtgnaonao = zNa * zNa * FFRT * gammaNao * Na_o;
+const float zk2frtgkoko = zK * zK * FFRT * gammaKo * K_o;
+
+const float acapofvmyo = Acap / (FF*vmyo);
+const float acapo2fvmyo = Acap / (2.0*FF*vmyo);
+const float vssovmyo = vss / vmyo;
+const float acapofvss = Acap / (FF*vss);
+const float acapo2fvss = Acap / (2.0*FF*vss);
+const float vnsrovmyo = vnsr / vmyo;
+const float vjsrovss = vjsr / vss;
+const float vjsrovnsr = vjsr / vnsr;
+const float cmdnkmcmdn = CMDN * KmCMDN;
+const float trpnkmtrpn = TRPN * KmTRPN;
+const float bsrkmbsr = BSR * KmBSR;
+const float bslkmbsl = BSL * KmBSL;
+const float csqnkmcsqn = CSQN * KmCSQN;
+
 float biphasic_stim_f(const float t) {
     float a = (t/stim_t_scale - stim_offset_2);
 
@@ -217,20 +263,21 @@ void main() {
 
     // Intermediate variables
     float time;
-    float m_inf, tau_m, alpha_m, beta_m, h_inf, tau_h, alpha_h, beta_h, j_inf, tau_j, alpha_j, beta_j;
-    float OINaCaMK;
-    float ainf, taua, iinf, tauifast, tauislow, Aifast, Aislow, i, aCaMKinf, tauaCaMK, iCaMKinf, deltaCaMKdevelop;
-    float deltaCaMKrecover, tauiCaMKfast, tauiCaMKslow, AiCaMKfast, AiCaMKslow, iCaMK, OItoCaMK;
-    float dinf, taud, finf, tauffast, taufslow, f, fCainf, taufCafast, taufCaslow, AfCafast, AfCaslow, fCa, jCainf, fCaMKinf;
-    float taufCaMKfast, fCaMKslow, fCaMK, fCaCaMKinf, taufCaCaMKfast, fCaCaMKslow, fCaCaMK, km2n, alphan, PsiCa;
+    float m_inf, h_inf, j_inf;
+    float OINaCaMK, mLinf, hLinf;
+    float hLCaMKinf, OINaLCaMK, INalate;
+    float ainf, iinf, Aifast, Aislow, i, aCaMKinf, deltaCaMKdevelop;
+    float deltaCaMKrecover, AiCaMKfast, AiCaMKslow, iCaMK, OItoCaMK;
+    float dinf, finf, f, AfCafast, AfCaslow, fCa;
+    float fCaMK, fCaCaMK, km2n, alphan, PsiCa;
     float ICaLbar, PsiCaNa, ICaNabar, PsiCaK, ICaKbar, ICaLCaMKbar, ICaNaCaMKbar, ICaKCaMKbar, OICaLCaMK;
-    float xrinf, tauxrfast, tauxrslow, Axrfast, Axrslow, xr, RKr;
-    float xs1inf, tauxs1, xs2inf, tauxs2;
-    float xK1inf, tauxK1, RK1;
+    float xrinf, Axrfast, Axrslow, xr, RKr;
+    float xs1inf, xs2inf;
+    float xK1inf, RK1;
     float hCa, hNa, h1i, h1ss, h2i, h2ss, h3i, h3ss, h4i, h4ss, h5i, h5ss, h6i, h6ss, h7, h8, h9, k1, k3p, k3pp;
     float k3, k4pi, k4pss, k4ppi, k4ppss, k4i, k4ss, k6i, k6ss, k7i, k7ss, k8, x1i, x1ss, x2i, x2ss, x3i, x3ss, x4i, x4ss, E1i;
     float E1ss, E2i, E2ss, E3i, E3ss, E4i, E4ss, alloi, alloss, JNaCaNai, JNaCaNass, JNaCaCai, JNaCaCass;
-    float KNai, KNao, P, alpha1, beta2, alpha3, beta3, beta4, x1NaK, x2NaK, x3NaK, x4NaK, E1NaK, E2NaK, E3NaK, E4NaK, JNaKNa;
+    float P, alpha1, beta2, alpha3, beta3, beta4, x1NaK, x2NaK, x3NaK, x4NaK, E1NaK, E2NaK, E3NaK, E4NaK, JNaKNa;
     float JNaKK, JNaK, NaiKNai3, oneNaiKNai3, oneKiKKi2, NaoKNao3, oneNaoKNao3, oneNoKKo2, KiKKi2;
     float xKb;
     float CaMKbound, CaMKactive;
@@ -238,16 +285,45 @@ void main() {
     float JrelNPinf, taurelNP, JrelCaMKinf, taurelCaMK, OrelCaMK, Jrel;
     float JupNP, JupCaMK, OupCaMK, Jleak, Jup;
     float Jtr;
-    float betaCai, betaCass, betaCajsr;
+    float betaCai_inv, betaCass_inv, betaCajsr_inv;
+    float bc1, bc2;
+
+    float tau_m_exp, tau_h_exp, tau_j_exp, tauhCaMKslow_exp, taua_exp, tauifast_exp,
+        tauislow_exp, tauiCaMKfast_exp, tauiCaMKslow_exp, taud_exp, tauffast_exp, taufslow_exp,
+        taufCafast_exp, taufCaslow_exp, taufCaMKfast_exp, taufCaCaMKfast_exp, exp_zcavfrt,
+        exp_znavfrt, exp_zkvfrt, tauxrfast_exp, tauxrslow_exp, tauxs1_exp, tauxs2_exp, tauxK1_exp,
+        INab_coeff, ICab_coeff, invKNai, invKNao, invhCa;
+
+    float a1b4denom, b2a3denom, pow_cajsr;
+    float invxis, invxsss, invnaks;
+
+    float taujCa_exp = exp(-dt/taujCa);
+
+    float K_i_base, K_i_diff;
+    float K_ss_base, K_ss_diff;
+    float Na_i_base, Na_i_diff;
+    float Na_ss_base, Na_ss_diff;
+    float Ca_nsr_base, Ca_nsr_diff;
+
+    Na_i_base = 7.0392546150493178;
+    Na_i_diff = 0.0;
+    Na_ss_base = 7.0393347733953027;
+    Na_ss_diff = 0.0;
+    K_i_base = 143.96135641252130;
+    K_i_diff = 0.0;
+    K_ss_base = 143.96133202798799;
+    K_ss_diff = 0.0;
+    Ca_nsr_base = 1.5672795239503670;
+    Ca_nsr_diff = 0.0;
 
     V = -87.852948063675726;
-    Na_i = 7.0392546150493178;
-    Na_ss = 7.0393347733953027;
-    K_i = 143.96135641252130;
-    K_ss = 143.96133202798799;
+    // Na_i = 7.0392546150493178;
+    // Na_ss = 7.0393347733953027;
+    // K_i = 143.96135641252130;
+    // K_ss = 143.96133202798799;
     Ca_i = 8.3881023438298657e-5;
     Ca_ss = 8.2772564492747630e-5;
-    Ca_nsr = 1.5672795239503670;
+    // Ca_nsr = 1.5672795239503670;
     Ca_jsr = 1.5261659336262898;
     m = 9.7991163152215356e-4;
     h = 0.80949981914040681;
@@ -291,9 +367,114 @@ void main() {
 
     bool activated = false;
 
+    float vidxint;
+    int vidx1, table_idx1;
+    ivec2 table_idx1_2d;
+    vec4 table_val1;
+
+    float u, prev_u;
+    float save_ca = float(data_type == 2);
+    float save_v = 1.0 - save_ca;
+
+    float stim, stim_t;
+
+    int table_mask = (1 << table_shift) - 1;
+    float invvrange = float(table_npoints) / (table_vmax - table_vmin);
+    float invvekrange = float(table_npoints) / (table_vekmax - table_vekmin);
+
     for (int step_count = 1; step_count <= num_steps; ++step_count) {
-        float stim = 0.0;
-        float stim_t = mod(float(step_count)*dt, period);
+        /*
+         * Table retrieval
+         */
+
+        vidxint = invvrange * (V - table_vmin);
+        vidx1 = int(round(vidxint));
+
+#define SET_TABLE_VALS(SEQ, IDX1) {                             \
+            table_idx1 = (SEQ) * table_npoints + (IDX1);        \
+            table_idx1_2d[0] = table_idx1 & table_mask;         \
+            table_idx1_2d[1] = table_idx1 >> table_shift;       \
+            table_val1 = texelFetch(table, table_idx1_2d, 0);   \
+        }
+
+        SET_TABLE_VALS(0, vidx1);
+        m_inf = table_val1[0];
+        tau_m_exp = table_val1[1];
+        h_inf = table_val1[2];
+        tau_h_exp = table_val1[3];
+
+        SET_TABLE_VALS(1, vidx1);
+        j_inf = table_val1[0];
+        tau_j_exp = table_val1[1];
+
+        SET_TABLE_VALS(2, vidx1);
+        ainf = table_val1[3];
+
+        SET_TABLE_VALS(3, vidx1);
+        taua_exp = table_val1[0];
+        iinf = table_val1[1];
+        tauifast_exp = table_val1[2];
+        tauislow_exp = table_val1[3];
+
+        SET_TABLE_VALS(4, vidx1);
+        Aifast = table_val1[0];
+        aCaMKinf = table_val1[1];
+        tauiCaMKfast_exp = table_val1[2];
+        tauiCaMKslow_exp = table_val1[3];
+
+        SET_TABLE_VALS(5, vidx1);
+        dinf = table_val1[0];
+        taud_exp = table_val1[1];
+        finf = table_val1[2];
+        tauffast_exp = table_val1[3];
+
+        SET_TABLE_VALS(6, vidx1);
+        taufslow_exp = table_val1[0];
+        taufCafast_exp = table_val1[1];
+        taufCaslow_exp = table_val1[2];
+        AfCafast = table_val1[3];
+
+        SET_TABLE_VALS(7, vidx1);
+        taufCaMKfast_exp = table_val1[0];
+        taufCaCaMKfast_exp = table_val1[1];
+        exp_zcavfrt = table_val1[2];
+        exp_znavfrt = table_val1[3];
+
+        SET_TABLE_VALS(8, vidx1);
+        exp_zkvfrt = table_val1[0];
+        xrinf = table_val1[1];
+        tauxrfast_exp = table_val1[2];
+        tauxrslow_exp = table_val1[3];
+
+        SET_TABLE_VALS(9, vidx1);
+        Axrfast = table_val1[0];
+        RKr = table_val1[1];
+        xs1inf = table_val1[2];
+        tauxs1_exp = table_val1[3];
+
+        SET_TABLE_VALS(10, vidx1);
+        tauxs2_exp = table_val1[0];
+        xK1inf = table_val1[1];
+        tauxK1_exp = table_val1[2];
+        RK1 = table_val1[3];
+
+        SET_TABLE_VALS(11, vidx1);
+        invhCa = table_val1[0];
+        hNa = table_val1[1];
+        invKNai = table_val1[2];
+        invKNao = table_val1[3];
+
+        SET_TABLE_VALS(12, vidx1);
+        INab_coeff = table_val1[0];
+        ICab_coeff = table_val1[1];
+        xKb = table_val1[2];
+
+        /*
+         * End table retrieval
+         */
+
+        stim = 0.0;
+        stim_t = mod(float(step_count)*dt, period);
         if (stim_t < stim_dur) {
             if (stim_biphasic) {
                 stim = biphasic_stim_f(stim_t);
@@ -303,6 +484,37 @@ void main() {
         }
 
         Istim = stim;
+
+        if (abs(K_i_diff) > 0.1) {
+            K_i_base = K_i_base + K_i_diff;
+            K_i_diff = 0.0;
+        }
+
+        if (abs(K_ss_diff) > 0.1) {
+            K_ss_base = K_ss_base + K_ss_diff;
+            K_ss_diff = 0.0;
+        }
+
+        if (abs(Na_i_diff) > 0.1) {
+            Na_i_base = Na_i_base + Na_i_diff;
+            Na_i_diff = 0.0;
+        }
+
+        if (abs(Na_ss_diff) > 0.1) {
+            Na_ss_base = Na_ss_base + Na_ss_diff;
+            Na_ss_diff = 0.0;
+        }
+
+        if (abs(Ca_nsr_diff) > 0.1) {
+            Ca_nsr_base = Ca_nsr_base + Ca_nsr_diff;
+            Ca_nsr_diff = 0.0;
+        }
+
+        K_i = K_i_base + K_i_diff;
+        K_ss = K_ss_base + K_ss_diff;
+        Na_i = Na_i_base + Na_i_diff;
+        Na_ss = Na_ss_base + Na_ss_diff;
+        Ca_nsr = Ca_nsr_base + Ca_nsr_diff;
 
         //
         // Calcium/calmodulin-dependent protein kinase (CaMK)
@@ -323,39 +535,11 @@ void main() {
         // Sodium current (INa) - TP version
         //
 
-        // Keep this thing around because it is used elsewhere
         OINaCaMK = 1.0 / (1.0 + KmCaMK/CaMKactive);
 
-        m_inf = 1.0 / (1.0 + exp((-56.86 - V)/9.03));
-        m_inf = m_inf * m_inf;
-        alpha_m = 1.0 / (1.0 + exp((-60.0 - V)/5.0));
-        beta_m = (0.1 / (1.0 + exp((V + 35.0)/5.0))) + (0.1 / (1.0 + exp((V - 50.0)/200.0)));
-        tau_m = alpha_m * beta_m;
-        m = m_inf - (m_inf - m) * exp(-dt/tau_m);
-
-        h_inf = 1.0 / (1.0 + exp((V + 71.55)/7.43));
-        h_inf = h_inf * h_inf;
-        if (V >= -40.0) {
-            alpha_h = 0.0;
-            beta_h = 0.77 / (0.13 * (1.0 + exp(-(V + 10.66)/11.1)));
-        } else {
-            alpha_h = 0.057 * exp(-(V + 80.0)/6.8);
-            beta_h = 2.7 * exp(0.079 * V) + 3.1e5 * exp(0.3485 * V);
-        }
-        tau_h = 1.0 / (alpha_h + beta_h);
-        h = h_inf - (h_inf - h) * exp(-dt/tau_h);
-
-        j_inf = 1.0 / (1.0 + exp((V + 71.55)/7.43));
-        j_inf = j_inf * j_inf;
-        if (V >= -40.0) {
-            alpha_j = 0.0;
-            beta_j = (0.6 * exp(0.057 * V)) / (1.0 + exp(-0.1*(V+32.0)));
-        } else {
-            alpha_j = ((-2.5428e4*exp(0.2444*V)-6.948e-6*exp(-0.04391*V))*(V+37.78)) / (1.0 + exp(0.311*(V+79.23)));
-            beta_j = (0.02424*exp(-0.01052*V)) / (1.0 + exp(-0.1378*(V+40.14)));
-        }
-        tau_j = 1.0 / (alpha_j + beta_j);
-        j = j_inf - (j_inf - j) * exp(-dt/tau_j);
+        m = m_inf - (m_inf - m) * tau_m_exp;
+        h = h_inf - (h_inf - h) * tau_h_exp;
+        j = j_inf - (j_inf - j) * tau_j_exp;
 
         INa = GNa * m * m * m * h * j * (V - ENa);
 
@@ -363,33 +547,18 @@ void main() {
         // Transient outward potassium current (Ito)
         //
 
-        ainf = 1.0 / (1.0 + exp(-(V-14.34)/14.82));
-        taua = 1.0515 / ((1.0 / (1.2089 * (1.0 + exp(-(V-18.41)/29.38)))) + (3.5 / (1.0 + exp((V+100.0)/29.38))));
-        a = ainf - (ainf - a) * exp(-dt/taua);
+        a = ainf - (ainf - a) * taua_exp;
 
-        iinf = 1.0 / (1.0 + exp((V+43.94)/5.711));
-        tauifast = 4.562 + 1.0 / (0.3933 * exp(-(V+100.0)/100.0) + 0.08004 * exp((V+50.0)/16.59));
-        tauislow = 23.62 + 1.0 / (0.001416 * exp(-(V+96.52)/59.05) + 1.7808e-8 * exp((V+114.1)/8.079));
-        ifast = iinf - (iinf - ifast) * exp(-dt/tauifast);
-        islow = iinf - (iinf - islow) * exp(-dt/tauislow);
-        Aifast = 1.0 / (1.0 + exp((V-213.6)/151.2));
+        ifast = iinf - (iinf - ifast) * tauifast_exp;
+        islow = iinf - (iinf - islow) * tauislow_exp;
         Aislow = 1.0 - Aifast;
         i = Aifast * ifast + Aislow * islow;
 
-        aCaMKinf = 1.0 / (1.0 + exp(-(V-24.34)/14.82));
-        tauaCaMK = taua;
-        aCaMK = aCaMKinf - (aCaMKinf - aCaMK) * exp(-dt/tauaCaMK);
+        aCaMK = aCaMKinf - (aCaMKinf - aCaMK) * taua_exp;
 
-        iCaMKinf = iinf;
-        deltaCaMKdevelop = 1.354 + 1e-4 / (exp((V-167.4)/15.89) + exp(-(V-12.23)/0.2154));
-        deltaCaMKrecover = 1.0 - 0.5 / (1.0 + exp((V+70.0)/20.0));
-        tauiCaMKfast = tauifast * deltaCaMKdevelop * deltaCaMKrecover;
-        tauiCaMKslow = tauislow * deltaCaMKdevelop * deltaCaMKrecover;
-        iCaMKfast = iCaMKinf - (iCaMKinf - iCaMKfast) * exp(-dt/tauiCaMKfast);
-        iCaMKslow = iCaMKinf - (iCaMKinf - iCaMKslow) * exp(-dt/tauiCaMKslow);
-        AiCaMKfast = Aifast;
-        AiCaMKslow = Aislow;
-        iCaMK = AiCaMKfast * iCaMKfast + AiCaMKslow * iCaMKslow;
+        iCaMKfast = iinf - (iinf - iCaMKfast) * tauiCaMKfast_exp;
+        iCaMKslow = iinf - (iinf - iCaMKslow) * tauiCaMKslow_exp;
+        iCaMK = Aifast * iCaMKfast + Aislow * iCaMKslow;
 
         OItoCaMK = OINaCaMK;
 
@@ -399,54 +568,46 @@ void main() {
         // L-type calcium current (ICaL)
         //
 
-        dinf = 1.0 / (1.0 + exp(-(V+3.940)/4.230));
-        taud = 0.6 + 1.0 / (exp(-0.05 * (V+6.0)) + exp(0.09 * (V+14.0)));
-        d = dinf - (dinf - d) * exp(-dt/taud);
+        d = dinf - (dinf - d) * taud_exp;
 
-        finf = 1.0 / (1.0 + exp((V+19.58)/3.696));
-        // Note: This equation seems to be implemented correctly, but does not match the plot in Figure
-        // 1C of the paper.
-        tauffast = 7.0 + 1.0 / (0.0045 * exp(-(V+20.0)/10.0) + 0.0045 * exp((V+20.0)/10.0));
-        taufslow = 1000.0 + 1.0 / (0.000035 * exp(-(V+5.0)/4.0) + 0.000035 * exp((V+5.0)/6.0));
-        ffast = finf - (finf - ffast) * exp(-dt/tauffast);
-        fslow = finf - (finf - fslow) * exp(-dt/taufslow);
+        ffast = finf - (finf - ffast) * tauffast_exp;
+        fslow = finf - (finf - fslow) * taufslow_exp;
         f = Affast * ffast + Afslow * fslow;
 
-        fCainf = finf;
-        taufCafast = 7.0 + 1.0 / (0.04 * exp(-(V-4.0)/7.0) + 0.04 * exp((V-4.0)/7.0));
-        taufCaslow = 100.0 + 1.0 / (0.00012 * exp(-V/3.0) + 0.00012 * exp(V/7.0));
-        fCafast = fCainf - (fCainf - fCafast) * exp(-dt/taufCafast);
-        fCaslow = fCainf - (fCainf - fCaslow) * exp(-dt/taufCaslow);
-        AfCafast = 0.3 + 0.6 / (1.0 + exp((V-10.0)/10.0));
+        fCafast = finf - (finf - fCafast) * taufCafast_exp;
+        fCaslow = finf - (finf - fCaslow) * taufCaslow_exp;
         AfCaslow = 1.0 - AfCafast;
         fCa = AfCafast * fCafast + AfCaslow * fCaslow;
 
-        jCainf = fCainf;
-        jCa = jCainf - (jCainf - jCa) * exp(-dt/taujCa);
+        jCa = finf - (finf - jCa) * taujCa_exp;
 
-        fCaMKinf = finf;
-        taufCaMKfast = 2.5 * tauffast;
-        fCaMKfast = fCaMKinf - (fCaMKinf - fCaMKfast) * exp(-dt/taufCaMKfast);
-        fCaMKslow = fslow;
-        fCaMK = AfCaMKfast * fCaMKfast + AfCaMKslow * fCaMKslow;
+        fCaMKfast = finf - (finf - fCaMKfast) * taufCaMKfast_exp;
+        fCaMK = AfCaMKfast * fCaMKfast + AfCaMKslow * fslow;
 
-        fCaCaMKinf = finf;
-        taufCaCaMKfast = 2.5 * taufCafast;
-        fCaCaMKslow = fCaslow;
-        fCaCaMKfast = fCaCaMKinf - (fCaCaMKinf - fCaCaMKfast) * exp(-dt/taufCaCaMKfast);
-        fCaCaMK = AfCaCaMKfast * fCaCaMKfast + AfCaCaMKslow * fCaCaMKslow;
+        fCaCaMKfast = finf - (finf - fCaCaMKfast) * taufCaCaMKfast_exp;
+        fCaCaMK = AfCaCaMKfast * fCaCaMKfast + AfCaCaMKslow * fCaslow;
 
         km2n = jCa;
-        alphan = 1.0 / (kp2n/km2n + pow((1.0 + Kmn/Ca_ss), 4.0));
+        alphan = 1.0 + Kmn/Ca_ss;
+        alphan = alphan * alphan;
+        alphan = alphan * alphan;
+        alphan = 1.0 / (kp2n/km2n + alphan);
+        // TODO replace with lookup?
         n = alphan * (kp2n/km2n) - (alphan * (kp2n/km2n) - n) * exp(-km2n*dt);
 
-        PsiCa = zCa*zCa * V*FFRT * (gammaCai * Ca_ss * exp(zCa*V*FRT) - gammaCao * Ca_o) / (exp(zCa*V*FRT) - 1.0);
+        if (abs(V) < 0.01) {
+            // L'Hopital
+            PsiCa = zcafgcai * Ca_ss - zcafgcaocao;
+            PsiCaNa = znafgnai * Na_ss - znafgnaonao;
+            PsiCaK = zkfgki * K_ss - zkfgkoko;
+        } else {
+            PsiCa = V * (zca2frtgcai * Ca_ss * exp_zcavfrt - zca2frtgcaocao) / (exp_zcavfrt - 1.0);
+            PsiCaNa = V * (zna2frtgnai * Na_ss * exp_znavfrt - zna2frtgnaonao) / (exp_znavfrt - 1.0);
+            PsiCaK = V * (zk2frtgki * K_ss * exp_zkvfrt - zk2frtgkoko) / (exp_zkvfrt - 1.0);
+        }
+
         ICaLbar = PCa * PsiCa;
-
-        PsiCaNa = zNa*zNa * V*FFRT * (gammaNai * Na_ss * exp(zNa*V*FRT) - gammaNao * Na_o) / (exp(zNa*V*FRT) - 1.0);
         ICaNabar = PCaNa * PsiCaNa;
-
-        PsiCaK = zK*zK * V*FFRT * (gammaKi * K_ss * exp(zK*V*FRT) - gammaKo * K_o) / (exp(zK*V*FRT) - 1.0);
         ICaKbar = PCaK * PsiCaK;
 
         ICaLCaMKbar = PCaCaMK * PsiCa;
@@ -463,68 +624,48 @@ void main() {
         // Rapid delayed rectifier potassium current (IKr)
         //
 
-        xrinf = 1.0 / (1.0 + exp(-(V+8.337)/6.789));
-        tauxrfast = 12.98 + 1.0 / (0.3652 * exp((V-31.66)/3.869) + 4.123e-5 * exp(-(V-47.78)/20.38));
-        tauxrslow = 1.865 + 1.0 / (0.06629 * exp((V-34.70)/7.355) + 1.128e-5 * exp(-(V-29.74)/25.94));
-        xrfast = xrinf - (xrinf - xrfast) * exp(-dt/tauxrfast);
-        xrslow = xrinf - (xrinf - xrslow) * exp(-dt/tauxrslow);
-        Axrfast = 1.0 / (1.0 + exp((V+54.81)/38.21));
+        xrfast = xrinf - (xrinf - xrfast) * tauxrfast_exp;
+        xrslow = xrinf - (xrinf - xrslow) * tauxrslow_exp;
         Axrslow = 1.0 - Axrfast;
         xr = Axrfast * xrfast + Axrslow * xrslow;
 
-        RKr = 1.0 / ((1.0 + exp((V+55.0)/75.0)) * (1.0 + exp((V-10.0)/30.0)));
-
-        IKr = GKrbar * sqrt(K_o/5.4) * xr * RKr * (V - EK);
+        IKr = GKrbar * sqrtko54 * xr * RKr * (V - EK);
 
         //
         // Slow delayed rectifier potassium current (IKs)
         //
 
-        // Note: The tail below -15mV looks slightly different than Figure 3D from the paper.
-        xs1inf = 1.0 / (1.0 + exp(-(V+11.60)/8.932));
-        tauxs1 = 817.3 + 1.0 / (2.326e-4 * exp((V+48.28)/17.80) + 0.001292 * exp(-(V+210.0)/230.0));
-        xs1 = xs1inf - (xs1inf - xs1) * exp(-dt/tauxs1);
+        xs1 = xs1inf - (xs1inf - xs1) * tauxs1_exp;
+        xs2 = xs1inf - (xs1inf - xs2) * tauxs2_exp;
 
-        xs2inf = xs1inf;
-        tauxs2 = 1.0 / (0.01 * exp((V-50.0)/20.0) + 0.0193 * exp(-(V+66.54)/31.0));
-        xs2 = xs2inf - (xs2inf - xs2) * exp(-dt/tauxs2);
-
+        // TODO: replace with table over Ca vals?
         IKs = GKsbar * (1.0 + 0.6 / (1.0 + pow((3.8e-5/Ca_i), 1.4))) * xs1 * xs2 * (V - EKs);
 
         //
         // Inward rectifier potassium current (IK1)
         //
 
-        xK1inf = 1.0 / (1.0 + exp(-(V+2.5538*K_o+144.59)/(1.5692*K_o+3.8115)));
-        // Note: The plot in Figure 2C of the paper has larger values, but the same shape, than found
-        // here.
-        tauxK1 = 122.2 / (exp(-(V+127.2)/20.36) + exp((V+236.8)/69.33));
-        xK1 = xK1inf - (xK1inf - xK1) * exp(-dt/tauxK1);
+        xK1 = xK1inf - (xK1inf - xK1) * tauxK1_exp;
 
-        RK1 = 1.0 / (1.0 + exp((V+105.8-2.6*K_o)/9.493));
-
-        IK1 = GK1bar * sqrt(K_o) * xK1 * RK1 * (V - EK);
+        IK1 = GK1bar * sqrtko * xK1 * RK1 * (V - EK);
 
         //
         // Sodium/calcium exchange current (INaCa)
         //
 
-        hCa = exp(qCa*V*FRT);
-        hNa = exp(qNa*V*FRT);
-
-        h1i = 1.0 + (Na_i/kNa3) * (1.0 + hNa);
-        h1ss = 1.0 + (Na_ss/kNa3) * (1.0 + hNa);
+        h1i = 1.0 + (Na_i*invkNa3) * (1.0 + hNa);
+        h1ss = 1.0 + (Na_ss*invkNa3) * (1.0 + hNa);
         h2i = (Na_i*hNa)/(kNa3*h1i);
         h2ss = (Na_ss*hNa)/(kNa3*h1ss);
         h3i = 1.0/h1i;
         h3ss = 1.0/h1ss;
-        h4i = 1.0 + (Na_i/kNa1) * (1.0 + Na_i/kNa2);
-        h4ss = 1.0 + (Na_ss/kNa1) * (1.0 + Na_ss/kNa2);
+        h4i = 1.0 + (Na_i*invkNa1) * (1.0 + Na_i*invkNa2);
+        h4ss = 1.0 + (Na_ss*invkNa1) * (1.0 + Na_ss*invkNa2);
         h5i = (Na_i*Na_i) / (h4i * kNa1 * kNa2);
         h5ss = (Na_ss*Na_ss) / (h4ss * kNa1 * kNa2);
         h6i = 1.0 / h4i;
         h6ss = 1.0 / h4ss;
-        h7 = 1.0 + (Na_o/kNa3) * (1.0 + 1.0/hNa);
+        h7 = 1.0 + (Na_o*invkNa3) * (1.0 + 1.0/hNa);
         h8 = Na_o / (kNa3 * hNa * h7);
         h9 = 1.0 / h7;
 
@@ -532,8 +673,8 @@ void main() {
         k3p = h9 * omegaCa;
         k3pp = h8 * omegaNaCa;
         k3 = k3p + k3pp;
-        k4pi = (h3i * omegaCa) / hCa;
-        k4pss = (h3ss * omegaCa) / hCa;
+        k4pi = (h3i * omegaCa) * invhCa;
+        k4pss = (h3ss * omegaCa) * invhCa;
         k4ppi = h2i * omegaNaCa;
         k4ppss = h2ss * omegaNaCa;
         k4i = k4pi + k4ppi;
@@ -553,17 +694,22 @@ void main() {
         x4i = k2 * k8 * (k4i + k5) + k3 * k5 * (k1 + k8);
         x4ss = k2 * k8 * (k4ss + k5) + k3 * k5 * (k1 + k8);
 
-        E1i = x1i / (x1i + x2i + x3i + x4i);
-        E1ss = x1ss / (x1ss + x2ss + x3ss + x4ss);
-        E2i = x2i / (x1i + x2i + x3i + x4i);
-        E2ss = x2ss / (x1ss + x2ss + x3ss + x4ss);
-        E3i = x3i / (x1i + x2i + x3i + x4i);
-        E3ss = x3ss / (x1ss + x2ss + x3ss + x4ss);
-        E4i = x4i / (x1i + x2i + x3i + x4i);
-        E4ss = x4ss / (x1ss + x2ss + x3ss + x4ss);
+        invxis = 1.0 / (x1i + x2i + x3i + x4i);
+        invxsss = 1.0 / (x1ss + x2ss + x3ss + x4ss);
 
-        alloi = 1.0 / (1.0 + pow((KmCaAct/Ca_i), 2.0));
-        alloss = 1.0 / (1.0 + pow((KmCaAct/Ca_ss), 2.0));
+        E1i = x1i * invxis;
+        E1ss = x1ss * invxsss;
+        E2i = x2i * invxis;
+        E2ss = x2ss * invxsss;
+        E3i = x3i * invxis;
+        E3ss = x3ss * invxsss;
+        E4i = x4i * invxis;
+        E4ss = x4ss * invxsss;
+
+        alloi = KmCaAct / Ca_i;
+        alloss = KmCaAct / Ca_ss;
+        alloi = 1.0 / (1.0 + alloi*alloi);
+        alloss = 1.0 / (1.0 + alloss*alloss);
 
         JNaCaNai = 3.0 * (E4i * k7i - E1i * k8) + E3i * k4ppi - E2i * k3pp;
         JNaCaNass = 3.0 * (E4ss * k7ss - E1ss * k8) + E3ss * k4ppss - E2ss * k3pp;
@@ -578,23 +724,29 @@ void main() {
         // Sodium/potassium ATPase current (INaK)
         //
 
-        KNai = KNaio * exp((Delta*V*FRT)/3.0);
-        KNao = KNaoo * exp(((1.0-Delta)*V*FRT)/3.0);
+        P = SigmaP / (1.0 + Hp*invKHP + Na_i*invKNaP + K_i*invKKP);
 
-        P = SigmaP / (1.0 + Hp/KHP + Na_i/KNaP + K_i/KKP);
+        NaiKNai3 = Na_i * invKNai;
+        NaiKNai3 = NaiKNai3 * NaiKNai3 * NaiKNai3;
+        oneNaiKNai3 = 1.0 + Na_i * invKNai;
+        oneNaiKNai3 = oneNaiKNai3 * oneNaiKNai3 * oneNaiKNai3;
+        oneKiKKi2 = 1.0 + K_i * invKKi;
+        oneKiKKi2 = oneKiKKi2 * oneKiKKi2;
+        NaoKNao3 = Na_o * invKNao;
+        NaoKNao3 = NaoKNao3 * NaoKNao3 * NaoKNao3;
+        oneNaoKNao3 = 1.0 + Na_o * invKNao;
+        oneNaoKNao3 = oneNaoKNao3 * oneNaoKNao3 * oneNaoKNao3;
+        KiKKi2 = K_i * invKKi;
+        KiKKi2 = KiKKi2 * KiKKi2;
 
-        NaiKNai3 = pow((Na_i/KNai), 3.0);
-        oneNaiKNai3 = pow((1.0 + Na_i/KNai), 3.0);
-        oneKiKKi2 = pow((1.0 + K_i/KKi), 2.0);
-        NaoKNao3 = pow((Na_o/KNao), 3.0);
-        oneNaoKNao3 = pow((1.0 + Na_o/KNao), 3.0);
-        KiKKi2 = pow((K_i/KKi), 2.0);
+        a1b4denom = 1.0 / (oneNaiKNai3 + oneKiKKi2 - 1.0);
+        b2a3denom = 1.0 / (oneNaoKNao3 + oneKoKKo2 - 1.0);
 
-        alpha1 = (k1pNaK * NaiKNai3) / (oneNaiKNai3 + oneKiKKi2 - 1.0);
-        beta2 = (k2mNaK * NaoKNao3) / (oneNaoKNao3 + oneKoKKo2 - 1.0);
-        alpha3 = (k3pNaK * KoKKo2) / (oneNaoKNao3 + oneKoKKo2 - 1.0);
-        beta3 = (k3mNaK * P * Hp) / (1.0 + MgATP/KMgATP);
-        beta4 = (k4mNaK * KiKKi2) / (oneNaiKNai3 + oneKiKKi2 - 1.0);
+        alpha1 = (k1pNaK * NaiKNai3) * a1b4denom;
+        beta2 = (k2mNaK * NaoKNao3) * b2a3denom;
+        alpha3 = (k3pNaK * KoKKo2) * b2a3denom;
+        beta3 = (k3mNaK * P * Hp) * b3denom;
+        beta4 = (k4mNaK * KiKKi2) * a1b4denom;
 
         // x1NaK = alpha4 * alpha1 * alpha2 + beta2 * beta4 * beta3 + alpha2 * beta4 * beta3 + beta3 * alpha1 * alpha2
         // Correction from
@@ -605,10 +757,12 @@ void main() {
         x3NaK = alpha2 * alpha3 * alpha4 + beta3 * beta2 * beta1 + beta2 * beta1 * alpha4 + alpha3 * alpha4 * beta1;
         x4NaK = beta4 * beta3 * beta2 + alpha3 * alpha4 * alpha1 + beta2 * alpha4 * alpha1 + beta3 * beta2 * alpha1;
 
-        E1NaK = x1NaK / (x1NaK + x2NaK + x3NaK + x4NaK);
-        E2NaK = x2NaK / (x1NaK + x2NaK + x3NaK + x4NaK);
-        E3NaK = x3NaK / (x1NaK + x2NaK + x3NaK + x4NaK);
-        E4NaK = x4NaK / (x1NaK + x2NaK + x3NaK + x4NaK);
+        invnaks = 1.0 / (x1NaK + x2NaK + x3NaK + x4NaK);
+
+        E1NaK = x1NaK * invnaks;
+        E2NaK = x2NaK * invnaks;
+        E3NaK = x3NaK * invnaks;
+        E4NaK = x4NaK * invnaks;
 
         JNaKNa = 3.0 * (E1NaK * alpha3 - E2NaK * beta3);
         JNaKK = 2.0 * (E4NaK * beta1 - E3NaK * alpha1);
@@ -619,10 +773,8 @@ void main() {
         // Background currents (INab, ICab, IKb) and sarcolemmal calcium pump current (IpCa)
         //
 
-        INab = PNab * zNa * zNa * V * FFRT * (Na_i * exp(zNa*V*FRT) - Na_o) / (exp(zNa*V*FRT) - 1.0);
-        ICab = PCab * zCa * zCa * V * FFRT * (gammaCai * Ca_i * exp(zCa*V*FRT) - gammaCao * Ca_o) / (exp(zCa*V*FRT) - 1.0);
-
-        xKb = 1.0 / (1.0 + exp(-(V-14.48)/18.34));
+        INab = PNab * INab_coeff * (Na_i * exp_znavfrt - Na_o);
+        ICab = PCab * ICab_coeff * (gammaCai * Ca_i * exp_zcavfrt - gammaCao * Ca_o);
 
         IKb = GKbbar * xKb * (V - EK);
         IpCa = GpCabar * (Ca_i / (0.0005 + Ca_i));
@@ -631,9 +783,9 @@ void main() {
         // Voltage
         //
 
-        float prev_u = V;
-        V = V - dt * (INa + Ito + ICaL + ICaNa + ICaK + IKr + IKs + IK1 + INaCa + INaK + INab + ICab + IKb + IpCa + Istim) / C_M;
-        float u = V;
+        prev_u = V;
+        V = V - dt * (INa + Ito + ICaL + ICaNa + ICaK + IKr + IKs + IK1 + INaCa + INaK + INab + ICab + IKb + IpCa + Istim);
+        float u = save_v * V;
 
         //
         // Calcium/calmodulin-dependent protein kinase (CaMK) integration
@@ -645,19 +797,25 @@ void main() {
         // Diffusion fluxes (JdiffNa, JdiffCa, JdiffK)
         //
 
-        JdiffNa = (Na_ss - Na_i) / taudiffNa;
-        JdiffCa = (Ca_ss - Ca_i) / taudiffCa;
-        JdiffK = (K_ss - K_i) / taudiffK;
+        JdiffNa = (Na_ss - Na_i) * invtaudiffna;
+        JdiffCa = (Ca_ss - Ca_i) * invtaudiffca;
+        JdiffK = (K_ss - K_i) * invtaudiffk;
 
         //
         // SR calcium release flux, via ryanodine receptor (Jrel)
         //
 
-        JrelNPinf = (alpharel * (-ICaL)) / (1.0 + pow((1.5/Ca_jsr), 8.0));
+        pow_cajsr = 1.5/Ca_jsr;
+        pow_cajsr = pow_cajsr * pow_cajsr;
+        pow_cajsr = pow_cajsr * pow_cajsr;
+        pow_cajsr = pow_cajsr * pow_cajsr;
+        pow_cajsr = 1.0 / (1.0 + pow_cajsr);
+
+        JrelNPinf = alpharel * (-ICaL) * pow_cajsr;
         taurelNP = max(betatau / (1.0 + (0.0123 / Ca_jsr)), 0.001);
         JrelNP = JrelNPinf - (JrelNPinf - JrelNP) * exp(-dt/taurelNP);
 
-        JrelCaMKinf = (alpharelCaMK * (-ICaL)) / (1.0 + pow((1.5/Ca_jsr), 8.0));
+        JrelCaMKinf = alpharelCaMK * (-ICaL) * pow_cajsr;
         taurelCaMK = max(betatauCaMK / (1.0 + (0.0123 / Ca_jsr)), 0.001);
         JrelCaMK = JrelCaMKinf - (JrelCaMKinf - JrelCaMK) * exp(-dt/taurelCaMK);
 
@@ -674,7 +832,7 @@ void main() {
 
         OupCaMK = OINaCaMK;
 
-        Jleak = (0.0039375 * Ca_nsr) / 15.0;
+        Jleak = (0.0039375 * Ca_nsr) * inv15;
 
         Jup = (1.0 - OupCaMK) * JupNP + OupCaMK * JupCaMK - Jleak;
 
@@ -682,7 +840,7 @@ void main() {
         // Calcium translocation from NSR to JSR (Jtr)
         //
 
-        Jtr = (Ca_nsr - Ca_jsr) / tautr;
+        Jtr = (Ca_nsr - Ca_jsr) * invtautr;
 
         //
         // Concentrations and buffers
@@ -692,25 +850,40 @@ void main() {
         // Correction 1 from
         // https://journals.plos.org/ploscompbiol/article/comment?id=10.1371/annotation/0b8121cd-4280-4ff7-91d9-e9887bcce396
         // (Remove INaL)
-        Na_i = Na_i + dt * (-(INa + 3.0 * INaCai + 3.0 * INaK + INab)*(Acap/(FF*vmyo)) + JdiffNa*(vss/vmyo));
-        Na_ss = Na_ss + dt * (-(ICaNa + 3.0 * INaCass) * (Acap / (FF*vss)) - JdiffNa);
+        // Na_i = Na_i + dt * (-(INa + 3.0 * INaCai + 3.0 * INaK + INab)*(Acap/(FF*vmyo)) + JdiffNa*(vss/vmyo));
+        Na_i_diff = Na_i_diff + dt * (-(INa + 3.0 * INaCai + 3.0 * INaK + INab) * acapofvmyo + JdiffNa * vssovmyo);
+        // Na_ss = Na_ss + dt * (-(ICaNa + 3.0 * INaCass) * (Acap / (FF*vss)) - JdiffNa);
+        Na_ss_diff = Na_ss_diff + dt * (-(ICaNa + 3.0 * INaCass) * acapofvss - JdiffNa);
         // Correction 2 from
         // https://journals.plos.org/ploscompbiol/article/comment?id=10.1371/annotation/0b8121cd-4280-4ff7-91d9-e9887bcce396
         // (IKur -> IKb)
-        K_i = K_i + dt * (-(Ito + IKr + IKs + IK1 + IKb + Istim - 2.0 * INaK)*(Acap/(FF*vmyo)) + JdiffK*(vss/vmyo));
-        K_ss = K_ss + dt * (-ICaK * (Acap / (FF*vss)) - JdiffK);
+        // K_i = K_i + dt * (-(Ito + IKr + IKs + IK1 + IKb + Istim - 2.0 * INaK)*(Acap/(FF*vmyo)) + JdiffK*(vss/vmyo));
+        K_i_diff = K_i_diff + dt * (-(Ito + IKr + IKs + IK1 + IKb + Istim - 2.0 * INaK) * acapofvmyo + JdiffK * vssovmyo);
+        // K_ss = K_ss + dt * (-ICaK * (Acap / (FF*vss)) - JdiffK);
+        K_ss_diff = K_ss_diff + dt * (-ICaK * acapofvss - JdiffK);
 
-        betaCai = 1.0 / (1.0 + (CMDN*KmCMDN)/(pow((KmCMDN+Ca_i), 2.0)) + (TRPN*KmTRPN)/(pow((KmTRPN+Ca_i), 2.0)));
-        Ca_i = Ca_i + dt * (betaCai * (-(IpCa + ICab - 2.0 * INaCai) * (Acap/(2.0*FF*vmyo)) - Jup * (vnsr/vmyo) + JdiffCa * (vss/vmyo)));
-        if (data_type == 2) u = Ca_i;
+        bc1 = KmCMDN+Ca_i;
+        bc1 = bc1*bc1;
+        bc2 = KmTRPN+Ca_i;
+        bc2 = bc2*bc2;
+        betaCai_inv = 1.0 + cmdnkmcmdn/bc1 + trpnkmtrpn/bc2;
+        Ca_i = Ca_i + dt * ((-(IpCa + ICab - 2.0 * INaCai) * acapo2fvmyo - Jup * vnsrovmyo + JdiffCa * vssovmyo) / betaCai_inv);
+        u += save_ca * Ca_i;
 
-        betaCass = 1.0 / (1.0 + (BSR*KmBSR)/(pow((KmBSR+Ca_ss), 2.0)) + (BSL*KmBSL)/(pow((KmBSL+Ca_ss), 2.0)));
-        Ca_ss = Ca_ss + dt * (betaCass * (-(ICaL - 2.0 * INaCass) * (Acap/(2.0*FF*vss)) + Jrel * (vjsr/vss) - JdiffCa));
+        bc1 = KmBSR+Ca_ss;
+        bc1 = bc1*bc1;
+        bc2 = KmBSL+Ca_ss;
+        bc2 = bc2*bc2;
+        betaCass_inv = 1.0 + bsrkmbsr/bc1 + bslkmbsl/bc2;
+        Ca_ss = Ca_ss + dt * ((-(ICaL - 2.0 * INaCass) * acapo2fvss + Jrel * vjsrovss - JdiffCa) / betaCass_inv);
 
-        Ca_nsr = Ca_nsr + dt * (Jup - Jtr * (vjsr/vnsr));
+        // Ca_nsr = Ca_nsr + dt * (Jup - Jtr * vjsrovnsr);
+        Ca_nsr_diff = Ca_nsr_diff + dt * (Jup - Jtr * vjsrovnsr);
 
-        betaCajsr = 1.0 / (1.0 + (CSQN*KmCSQN)/(pow((KmCSQN+Ca_jsr), 2.0)));
-        Ca_jsr = Ca_jsr + dt * (betaCajsr * (Jtr - Jrel));
+        bc1 = KmCSQN+Ca_jsr;
+        bc1 = bc1*bc1;
+        betaCajsr_inv = 1.0 + csqnkmcsqn/bc1;
+        Ca_jsr = Ca_jsr + dt * ((Jtr - Jrel) / betaCajsr_inv);
 
         if (step_count > pre_pace_steps) {
             // APD only mode
