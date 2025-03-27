@@ -171,6 +171,7 @@ require([
 
     pso.initializeTextures();
     pso.setupAllSolvers();
+    await pso.initializeTables();
 
     runPsoIterations(hyperparams.iteration_count);
   };

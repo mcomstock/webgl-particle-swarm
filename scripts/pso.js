@@ -20,6 +20,7 @@ define('scripts/pso', [
   'text!shaders/bueno_4v.frag',
   'text!shaders/bueno_brugada.frag',
   'text!shaders/update_global_best.frag',
+  'text!shaders/table_tnnp2006.frag',
   'text!shaders/tnnp2006.frag',
   'text!shaders/ovvr.frag',
   'text!shaders/ortp.frag',
@@ -45,6 +46,7 @@ define('scripts/pso', [
   Bueno4vShader,
   BuenoBrugadaShader,
   UpdateGlobalBestShader,
+  TableTnnp2006Shader,
   Tnnp2006Shader,
   OvvrShader,
   OrtpShader,
@@ -137,6 +139,16 @@ define('scripts/pso', [
           chi: 0.73,
           parameter_textures: 1,
           topology: 'complete',
+        },
+        tables: {
+          table_width: 512,
+          table_height: 512,
+          table_shift: 9,
+          npoints: 20000,
+          vmin: -100.0,
+          vmax: 100.0,
+          vekmin: -10.0,
+          vekmax: 190.0,
         },
         fk_bounds: [
           [25, 10, 50, 0.15, 1, 10, 500, 5, 5, 1, 0.2, 0.05, 0.005],
@@ -552,6 +564,9 @@ define('scripts/pso', [
       this.best_error_value_texture = gl_helper.loadFloatTexture(2, 2, best_error_value_array);
       this.best_error_value_out_texture = gl_helper.loadFloatTexture(2, 2, null);
 
+      // Table textures
+      this.table_tnnp2006_texture = gl_helper.loadFloatTexture(this.env.tables.table_width, this.env.tables.table_height, null);
+
       const env = this.env;
 
       env.velocity_update.istate  = new Uint32Array(tex_width*tex_height*4);
@@ -773,6 +788,18 @@ define('scripts/pso', [
           solver.uniforms.push(['w_init', '1f', () => this.env.simulation.w_init]);
         }
 
+        if (this.env.simulation.model === 'tnnp2006') {
+          solver.uniforms.push(
+            ['table', 'tex', () => this.table_tnnp2006_texture],
+            ['table_shift', '1i', () => this.env.tables.table_shift],
+            ['table_npoints', '1i', () => this.env.tables.npoints],
+            ['table_vmin', '1f', () => this.env.tables.vmin],
+            ['table_vmax', '1f', () => this.env.tables.vmax],
+            ['table_vekmin', '1f', () => this.env.tables.vekmin],
+            ['table_vekmax', '1f', () => this.env.tables.vekmax],
+          );
+        }
+
         return solver;
       };
 
@@ -860,6 +887,24 @@ define('scripts/pso', [
           run: this.gl_helper.runProgram,
           dims: [this.particles_width, this.particles_height],
         },
+
+        table_tnnp2006: {
+          vert: DefaultVertexShader,
+          frag: TableTnnp2006Shader,
+          uniforms: [
+            ['width', '1i', () => this.env.tables.table_width],
+            ['height', '1i', () => this.env.tables.table_height],
+            ['npoints', '1i', () => this.env.tables.npoints],
+            ['vmin', '1f', () => this.env.tables.vmin],
+            ['vmax', '1f', () => this.env.tables.vmax],
+            ['vekmin', '1f', () => this.env.tables.vekmin],
+            ['vekmax', '1f', () => this.env.tables.vekmax],
+            ['dt', '1f', () => this.env.simulation.dt],
+          ],
+          out: [this.table_tnnp2006_texture],
+          run: this.gl_helper.runProgram,
+          dims: [this.env.tables.table_width, this.env.tables.table_height],
+        },
       };
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
@@ -942,6 +987,16 @@ define('scripts/pso', [
       const cur_error = new Float32Array(asize);
       this.gl_helper.getFloatTextureArray(this.expanded_error_texture, tex_width,tex_height, cur_error);
       param_arrays_map[itr] = cur_error;
+    }
+
+    async initializeTables() {
+      const program_map = this.program_map;
+      const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
+
+      if (this.env.simulation.model === 'tnnp2006') {
+        await nextframe();
+        program_map.table_tnnp2006();
+      }
     }
 
     async runOneIteration() {
