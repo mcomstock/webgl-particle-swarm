@@ -20,6 +20,7 @@ define('scripts/pso', [
   'text!shaders/bueno_4v.frag',
   'text!shaders/bueno_brugada.frag',
   'text!shaders/update_global_best.frag',
+  'text!shaders/table_ovvr.frag',
   'text!shaders/table_tnnp2006.frag',
   'text!shaders/tnnp2006.frag',
   'text!shaders/ovvr.frag',
@@ -46,6 +47,7 @@ define('scripts/pso', [
   Bueno4vShader,
   BuenoBrugadaShader,
   UpdateGlobalBestShader,
+  TableOvvrShader,
   TableTnnp2006Shader,
   Tnnp2006Shader,
   OvvrShader,
@@ -91,6 +93,11 @@ define('scripts/pso', [
     static err_type_map = {
       'square': 0,
       'abs': 1,
+    };
+
+    static model_table_shader_map = {
+      'ovvr': TableOvvrShader,
+      'tnnp2006': TableTnnp2006Shader,
     };
 
     static getEnv() {
@@ -565,7 +572,7 @@ define('scripts/pso', [
       this.best_error_value_out_texture = gl_helper.loadFloatTexture(2, 2, null);
 
       // Table textures
-      this.table_tnnp2006_texture = gl_helper.loadFloatTexture(this.env.tables.table_width, this.env.tables.table_height, null);
+      this.table_texture = gl_helper.loadFloatTexture(this.env.tables.table_width, this.env.tables.table_height, null);
 
       const env = this.env;
 
@@ -788,9 +795,9 @@ define('scripts/pso', [
           solver.uniforms.push(['w_init', '1f', () => this.env.simulation.w_init]);
         }
 
-        if (this.env.simulation.model === 'tnnp2006') {
+        if (Object.keys(Pso.model_table_shader_map).includes(this.env.simulation.model)) {
           solver.uniforms.push(
-            ['table', 'tex', () => this.table_tnnp2006_texture],
+            ['table', 'tex', () => this.table_texture],
             ['table_shift', '1i', () => this.env.tables.table_shift],
             ['table_npoints', '1i', () => this.env.tables.npoints],
             ['table_vmin', '1f', () => this.env.tables.vmin],
@@ -887,10 +894,12 @@ define('scripts/pso', [
           run: this.gl_helper.runProgram,
           dims: [this.particles_width, this.particles_height],
         },
+      };
 
-        table_tnnp2006: {
+      if (Object.keys(Pso.model_table_shader_map).includes(this.env.simulation.model)) {
+        shader_map.table = {
           vert: DefaultVertexShader,
-          frag: TableTnnp2006Shader,
+          frag: Pso.model_table_shader_map[this.env.simulation.model],
           uniforms: [
             ['width', '1i', () => this.env.tables.table_width],
             ['height', '1i', () => this.env.tables.table_height],
@@ -901,11 +910,11 @@ define('scripts/pso', [
             ['vekmax', '1f', () => this.env.tables.vekmax],
             ['dt', '1f', () => this.env.simulation.dt],
           ],
-          out: [this.table_tnnp2006_texture],
+          out: [this.table_texture],
           run: this.gl_helper.runProgram,
           dims: [this.env.tables.table_width, this.env.tables.table_height],
-        },
-      };
+        };
+      }
 
       for (let i = 0; i < this.env.particles.parameter_textures; ++i) {
         shader_map['local_best_update_' + i] = makeUpdateLocalBestsSolver(i);
@@ -993,9 +1002,9 @@ define('scripts/pso', [
       const program_map = this.program_map;
       const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
 
-      if (this.env.simulation.model === 'tnnp2006') {
+      if (Object.keys(Pso.model_table_shader_map).includes(this.env.simulation.model)) {
         await nextframe();
-        program_map.table_tnnp2006();
+        program_map.table();
       }
     }
 
