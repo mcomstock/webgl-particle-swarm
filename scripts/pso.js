@@ -20,6 +20,7 @@ define('scripts/pso', [
   'text!shaders/bueno_4v.frag',
   'text!shaders/bueno_brugada.frag',
   'text!shaders/update_global_best.frag',
+  'text!shaders/table_ortp.frag',
   'text!shaders/table_ovvr.frag',
   'text!shaders/table_tnnp2006.frag',
   'text!shaders/tnnp2006.frag',
@@ -47,6 +48,7 @@ define('scripts/pso', [
   Bueno4vShader,
   BuenoBrugadaShader,
   UpdateGlobalBestShader,
+  TableOrtpShader,
   TableOvvrShader,
   TableTnnp2006Shader,
   Tnnp2006Shader,
@@ -96,6 +98,7 @@ define('scripts/pso', [
     };
 
     static model_table_shader_map = {
+      'ortp': TableOrtpShader,
       'ovvr': TableOvvrShader,
       'tnnp2006': TableTnnp2006Shader,
     };
