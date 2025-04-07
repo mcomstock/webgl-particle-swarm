@@ -139,10 +139,6 @@ void main() {
     float m, h, j, r, s, xr1, xr2, xs, d, f, f2, fcass;
 
     float m_inf, h_inf, j_inf, xs_inf, d_inf, f_inf, f2_inf, fcass_inf, r_inf, s_inf, xr1_inf, xr2_inf, xK1_inf;
-    // float alpha_m, alpha_h, alpha_j, alpha_xs, alpha_d, alpha_f, alpha_f2, alpha_xr1, alpha_xr2, alpha_K1;
-    // float beta_m, beta_h, beta_j, beta_xs, beta_d, beta_f, beta_f2, beta_xr1, beta_xr2, beta_K1;
-    // float tau_m, tau_h, tau_j, tau_xs, tau_d, tau_f, tau_f2, tau_fcass, tau_r, tau_s, tau_xr1, tau_xr2;
-    // float gamma_d, gamma_f, gamma_f2;
     float tau_fcass;
 
     float Iion, INa, IK1, Ito, IKr, IKs, ICaL, INaCa, INaK, IpCa, IpK, IbCa, IbNa, Istim;
@@ -366,104 +362,21 @@ void main() {
 
         Istim = stim;
 
-        // m_inf = 1.0 / (1.0 + exp((-56.86 - V)/9.03));
-        // m_inf = m_inf * m_inf;
-        // alpha_m = 1.0 / (1.0 + exp((-60.0 - V)/5.0));
-        // beta_m = (0.1 / (1.0 + exp((V + 35.0)/5.0))) + (0.1 / (1.0 + exp((V - 50.0)/200.0)));
-        // tau_m = alpha_m * beta_m;
-        // m = m_inf - (m_inf - m) * exp(-dt/tau_m);
         m = m_inf - (m_inf - m) * tau_m_exp;
-
-        // h_inf = 1.0 / (1.0 + exp((V + 71.55)/7.43));
-        // h_inf = h_inf * h_inf;
-        // if (V >= -40.0) {
-        //     alpha_h = 0.0;
-        //     beta_h = 0.77 / (0.13 * (1.0 + exp(-(V + 10.66)/11.1)));
-        // } else {
-        //     alpha_h = 0.057 * exp(-(V + 80.0)/6.8);
-        //     beta_h = 2.7 * exp(0.079 * V) + 3.1e5 * exp(0.3485 * V);
-        // }
-        // tau_h = 1.0 / (alpha_h + beta_h);
-        // h = h_inf - (h_inf - h) * exp(-dt/tau_h);
         h = h_inf - (h_inf - h) * tau_h_exp;
-
-        // j_inf = 1.0 / (1.0 + exp((V + 71.55)/7.43));
-        // j_inf = j_inf * j_inf;
-        // if (V >= -40.0) {
-        //     alpha_j = 0.0;
-        //     beta_j = (0.6 * exp(0.057 * V)) / (1.0 + exp(-0.1*(V+32.0)));
-        // } else {
-        //     alpha_j = ((-2.5428e4*exp(0.2444*V)-6.948e-6*exp(-0.04391*V))*(V+37.78)) / (1.0 + exp(0.311*(V+79.23)));
-        //     beta_j = (0.02424*exp(-0.01052*V)) / (1.0 + exp(-0.1378*(V+40.14)));
-        // }
-        // tau_j = 1.0 / (alpha_j + beta_j);
-        // j = j_inf - (j_inf - j) * exp(-dt/tau_j);
         j = j_inf - (j_inf - j) * tau_j_exp;
-
-        // xs_inf = 1.0 / (1.0 + exp((-5.0 - V)/14.0));
-        // alpha_xs = 1400.0 / sqrt(1.0 + exp((5.0-V)/6.0));
-        // beta_xs = 1.0 / (1.0 + exp((V-35.0)/15.0));
-        // tau_xs = alpha_xs * beta_xs + 80.0;
-        // xs = xs_inf - (xs_inf - xs) * exp(-dt/tau_xs);
         xs = xs_inf - (xs_inf - xs) * tau_xs_exp;
-
-        // d_inf = 1.0 / (1.0 + exp((-8.0 - V)/7.5));
-        // alpha_d = 1.4 / (1.0 + exp((-35.0-V)/13.0)) + 0.25;
-        // beta_d = 1.4 / (1.0 + exp((V+5.0)/5.0));
-        // gamma_d = 1.0 / (1.0 + exp((50.0-V)/20.0));
-        // tau_d = alpha_d * beta_d + gamma_d;
-        // d = d_inf - (d_inf - d) * exp(-dt/tau_d);
         d = d_inf - (d_inf - d) * tau_d_exp;
-
-        // f_inf = 1.0 / (1.0 + exp((V+20.0)/7.0));
-        // alpha_f = 1102.5 * exp(-((V+27.0)/15.0)*((V+27.0)/15.0));
-        // beta_f = 200.0 / (1.0 + exp((13.0-V)/10.0));
-        // gamma_f = 180.0 / (1.0 + exp((V+30.0)/10.0)) + 20.0;
-        // tau_f = alpha_f + beta_f + gamma_f;
-        // f = f_inf - (f_inf - f) * exp(-dt/tau_f);
         f = f_inf - (f_inf - f) * tau_f_exp;
-
-        // f2_inf = 0.67 / (1.0 + exp((V+35.0)/7.0)) + 0.33;
-        // The equation here differs from the paper (original commented out)
-        // alpha_f2 = 600.0 * exp(-((V+25.0)*(V+25.0))/170.0)
-        // alpha_f2 = 600.0 * exp(-((V+25.0)*(V+25.0))/49.0);
-        // beta_f2 = 31.0 / (1.0 + exp((25.0 - V)/10.0));
-        // gamma_f2 = 16.0 / (1.0 + exp((V+30.0)/10.0));
-        // tau_f2 = alpha_f2 + beta_f2 + gamma_f2;
-        // f2 = f2_inf - (f2_inf - f2) * exp(-dt/tau_f2);
         f2 = f2_inf - (f2_inf - f2) * tau_f2_exp;
 
         fcass_inf = 0.6 / (1.0 + 400.0*CaSS*CaSS) + 0.4;
         tau_fcass = 80.0 / (1.0 + 400.0*CaSS*CaSS) + 2.0;
         fcass = fcass_inf - (fcass_inf - fcass) * exp(-dt/tau_fcass);
 
-        // r_inf = 1.0 / (1.0 + exp((20.0 - V)/6.0));
-        // tau_r = 9.5 * exp(-(V+40.0)*(V+40.0)/1800.0) + 0.8;
-        // r = r_inf - (r_inf - r) * exp(-dt/tau_r);
         r = r_inf - (r_inf - r) * tau_r_exp;
-
-// #if defined ENDO
-//         s_inf = 1.0 / (1.0 + exp((V+28.0)/5.0));
-//         tau_s = 1000.0 * exp(-(V+67.0)*(V+67.0)/1000.0) + 8.0;
-// #else
-//         s_inf = 1.0 / (1.0 + exp((V+20.0)/5.0));
-//         tau_s = 85.0 * exp(-(V+45.0)*(V+45.0)/320.0) + 5.0 / (1.0 + exp((V-20.0)/5.0)) + 3.0;
-// #endif
-//         s = s_inf - (s_inf - s) * exp(-dt/tau_s);
         s = s_inf - (s_inf - s) * tau_s_exp;
-
-        // xr1_inf = 1.0 / (1.0 + exp((-26.0 - V)/7.0));
-        // alpha_xr1 = 450.0 / (1.0 + exp((-45.0 - V)/10.0));
-        // beta_xr1 = 6.0 / (1.0 + exp((V+30.0)/11.5));
-        // tau_xr1 = alpha_xr1 * beta_xr1;
-        // xr1 = xr1_inf - (xr1_inf - xr1) * exp(-dt/tau_xr1);
         xr1 = xr1_inf - (xr1_inf - xr1) * tau_xr1_exp;
-
-        // xr2_inf = 1.0 / (1.0 + exp((V+88.0)/24.0));
-        // alpha_xr2 = 3.0 / (1.0 + exp((-60.0 - V)/20.0));
-        // beta_xr2 = 1.12 / (1.0 + exp((V-60.0)/20.0));
-        // tau_xr2 = alpha_xr2 * beta_xr2;
-        // xr2 = xr2_inf - (xr2_inf - xr2) * exp(-dt/tau_xr2);
         xr2 = xr2_inf - (xr2_inf - xr2) * tau_xr2_exp;
 
         ENa = rtof * log(Nao/Nai);
@@ -493,7 +406,6 @@ void main() {
          * End V-EK table retrieval
          */
 
-        // ICaL = GCaL * d * f * f2 * fcass * 4.0 * (((V-15.0)*FF*FF)/(RR*T)) * ((0.25 * CaSS * exp(2.0 * (V-15.0) * FF/(RR*T)) - Cao) / (exp(2.0 * (V-15.0) * FF/(RR*T)) - 1.0));
         ICaL = GCaL * d * f * f2 * fcass * ICaL_coeff * ((0.25 * CaSS * ICaL_exp - Cao) / (ICaL_exp - 1.0));
 
         IKs = GKs * xs * xs * (V - EKs);
@@ -501,15 +413,9 @@ void main() {
         Ito = Gto * r * s * (V - EK);
         IKr = GKr * Ko54sqrt * xr1 * xr2 * (V - EK);
 
-        // alpha_K1 = 0.1 / (1.0 + exp(0.06*((V-EK)-200.0)));
-        // beta_K1 = (3.0 * exp(0.0002*((V-EK)+100.0)) + exp(0.1*((V-EK)-10.0))) / (1.0 + exp(-0.5*(V-EK)));
-        // xK1_inf = alpha_K1 / (alpha_K1 + beta_K1);
-        // Note that the sqrt term is 1 with the default parameterization
         IK1 = GK1 * Ko54sqrt * xK1_inf * (V-EK);
 
-        // INaCa = kNaCa * (exp(gamma*V*FF/(RR*T))*Nai*Nai*Nai*Cao - exp((gamma-1.0)*V*FF/(RR*T))*Nao*Nao*Nao*Cai*alpha) / ((KmNai*KmNai*KmNai + Nao*Nao*Nao) * (KmCa+Cao) * (1.0 + ksat*exp((gamma-1.0)*V*FF/(RR*T))));
         INaCa = kNaCa * (INaCa_Nai_coeff*Nai*Nai*Nai - INaCa_Cai_coeff*Cai);
-        /* INaK = PNaK*Ko*Nai / ((Ko+KmK) * (Nai+KmNa) * (1.0 + 0.1245*exp(-0.1*V*FF/(RR*T)) + 0.0353 * exp(-V*FF/(RR*T)))); */
         INaK = PNaK*Nai*INaK_coeff;
         IpCa = GpCa * Cai / (KpCa + Cai);
         IpK = GpK * (V-EK) * IpK_coeff;

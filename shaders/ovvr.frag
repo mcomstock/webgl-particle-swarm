@@ -487,54 +487,25 @@ void main() {
         // it appears that the peak is shifted by 1 ms, but is otherwise the same. The difference may be
         // due to how the stimulus is applied.
 
-        // minf = 1.0 / (1.0 + exp(-(V + 39.57)/9.871));
-        // taum = 1.0 / (6.765 * exp((V+11.64)/34.77) + 8.552 * exp(-(V+77.42)/5.955));
-        // m = minf - (minf - m) * exp(-dt/taum);
         m = minf - (minf - m) * taum_exp;
 
-        // hinf = 1.0 / (1.0 + exp((V + 82.9)/6.086));
-        // tauhfast = 1.0 / (1.432e-5 * exp(-(V+1.196)/6.285) + 6.149 * exp((V+0.5096)/20.27));
-        // tauhslow = 1.0 / (0.009764 * exp(-(V+17.95)/28.05) + 0.3343 * exp((V+5.730)/56.66));
-        // hfast = hinf - (hinf - hfast) * exp(-dt/tauhfast);
-        // hslow = hinf - (hinf - hslow) * exp(-dt/tauhslow);
         hfast = hinf - (hinf - hfast) * tauhfast_exp;
         hslow = hinf - (hinf - hslow) * tauhslow_exp;
         h = Ahfast * hfast + Ahslow * hslow;
 
-        // jinf = hinf;
-        // tauj = 2.038 + 1.0 / (0.02136 * exp(-(V+100.6)/8.281) + 0.3052 * exp((V+0.9941)/38.45));
-        // j = jinf - (jinf - j) * exp(-dt/tauj);
         j = hinf - (hinf - j) * tauj_exp;
 
-        // hCaMKinf = 1.0 / (1.0 + exp((V+89.1)/6.086));
-        // tauhCaMKslow = 3.0 * tauhslow;
-        // hCaMKfast = hfast;
-        // hCaMKslow = hCaMKinf - (hCaMKinf - hCaMKslow) * exp(-dt/tauhCaMKslow);
-        // hCaMK = AhCaMKfast * hCaMKfast + AhCaMKslow * hCaMKslow;
         hCaMKslow = hCaMKinf - (hCaMKinf - hCaMKslow) * tauhCaMKslow_exp;
         hCaMK = AhCaMKfast * hfast + AhCaMKslow * hCaMKslow;
 
-
-        // jCaMKinf = jinf;
-        // taujCaMK = 1.46 * tauj;
-        // jCaMK = jCaMKinf - (jCaMKinf - jCaMK) * exp(-dt/taujCaMK);
         jCaMK = hinf - (hinf - jCaMK) * taujCaMK_exp;
 
         OINaCaMK = 1.0 / (1.0 + KmCaMK/CaMKactive);
 
         INafast = GNafastbar * (V - ENa) * m*m*m * ((1.0 - OINaCaMK) * h * j + OINaCaMK * hCaMK * jCaMK);
 
-        // mLinf = 1.0 / (1.0 + exp(-(V+42.85)/5.264));
-        // taumL = taum;
-        // mL = mLinf - (mLinf - mL) * exp(-dt/taumL);
         mL = mLinf - (mLinf - mL) * taum_exp;
-
-        // hLinf = 1.0 / (1.0 + exp((V+87.61)/7.488));
-        // hL = hLinf - (hLinf - hL) * exp(-dt/tauhL);
         hL = hLinf - (hLinf - hL) * tauhL_exp;
-
-        // hLCaMKinf = 1.0 / (1.0 + exp((V+93.81)/7.488));
-        // hLCaMK = hLCaMKinf - (hLCaMKinf - hLCaMK) * exp(-dt/tauhLCaMK);
         hLCaMK = hLCaMKinf - (hLCaMKinf - hLCaMK) * tauhLCaMK_exp;
 
         OINaLCaMK = OINaCaMK;
@@ -547,39 +518,15 @@ void main() {
         // Transient outward potassium current (Ito)
         //
 
-        // ainf = 1.0 / (1.0 + exp(-(V-14.34)/14.82));
-        // taua = 1.0515 / ((1.0 / (1.2089 * (1.0 + exp(-(V-18.41)/29.38)))) + (3.5 / (1.0 + exp((V+100.0)/29.38))));
-        // a = ainf - (ainf - a) * exp(-dt/taua);
         a = ainf - (ainf - a) * taua_exp;
 
-        // iinf = 1.0 / (1.0 + exp((V+43.94)/5.711));
-        // tauifast = 4.562 + 1.0 / (0.3933 * exp(-(V+100.0)/100.0) + 0.08004 * exp((V+50.0)/16.59));
-        // tauislow = 23.62 + 1.0 / (0.001416 * exp(-(V+96.52)/59.05) + 1.7808e-8 * exp((V+114.1)/8.079));
-        // ifast = iinf - (iinf - ifast) * exp(-dt/tauifast);
-        // islow = iinf - (iinf - islow) * exp(-dt/tauislow);
-        // Aifast = 1.0 / (1.0 + exp((V-213.6)/151.2));
-        // Aislow = 1.0 - Aifast;
-        // i = Aifast * ifast + Aislow * islow;
         ifast = iinf - (iinf - ifast) * tauifast_exp;
         islow = iinf - (iinf - islow) * tauislow_exp;
         Aislow = 1.0 - Aifast;
         i = Aifast * ifast + Aislow * islow;
 
-        // aCaMKinf = 1.0 / (1.0 + exp(-(V-24.34)/14.82));
-        // tauaCaMK = taua;
-        // aCaMK = aCaMKinf - (aCaMKinf - aCaMK) * exp(-dt/tauaCaMK);
         aCaMK = aCaMKinf - (aCaMKinf - aCaMK) * taua_exp;
 
-        // iCaMKinf = iinf;
-        // deltaCaMKdevelop = 1.354 + 1e-4 / (exp((V-167.4)/15.89) + exp(-(V-12.23)/0.2154));
-        // deltaCaMKrecover = 1.0 - 0.5 / (1.0 + exp((V+70.0)/20.0));
-        // tauiCaMKfast = tauifast * deltaCaMKdevelop * deltaCaMKrecover;
-        // tauiCaMKslow = tauislow * deltaCaMKdevelop * deltaCaMKrecover;
-        // iCaMKfast = iCaMKinf - (iCaMKinf - iCaMKfast) * exp(-dt/tauiCaMKfast);
-        // iCaMKslow = iCaMKinf - (iCaMKinf - iCaMKslow) * exp(-dt/tauiCaMKslow);
-        // AiCaMKfast = Aifast;
-        // AiCaMKslow = Aislow;
-        // iCaMK = AiCaMKfast * iCaMKfast + AiCaMKslow * iCaMKslow;
         iCaMKfast = iinf - (iinf - iCaMKfast) * tauiCaMKfast_exp;
         iCaMKslow = iinf - (iinf - iCaMKslow) * tauiCaMKslow_exp;
         iCaMK = Aifast * iCaMKfast + Aislow * iCaMKslow;
@@ -592,53 +539,22 @@ void main() {
         // L-type calcium current (ICaL)
         //
 
-        // dinf = 1.0 / (1.0 + exp(-(V+3.940)/4.230));
-        // taud = 0.6 + 1.0 / (exp(-0.05 * (V+6.0)) + exp(0.09 * (V+14.0)));
-        // d = dinf - (dinf - d) * exp(-dt/taud);
         d = dinf - (dinf - d) * taud_exp;
 
-        // finf = 1.0 / (1.0 + exp((V+19.58)/3.696));
-        // // Note: This equation seems to be implemented correctly, but does not match the plot in Figure
-        // // 1C of the paper.
-        // tauffast = 7.0 + 1.0 / (0.0045 * exp(-(V+20.0)/10.0) + 0.0045 * exp((V+20.0)/10.0));
-        // taufslow = 1000.0 + 1.0 / (0.000035 * exp(-(V+5.0)/4.0) + 0.000035 * exp((V+5.0)/6.0));
-        // ffast = finf - (finf - ffast) * exp(-dt/tauffast);
-        // fslow = finf - (finf - fslow) * exp(-dt/taufslow);
-        // f = Affast * ffast + Afslow * fslow;
         ffast = finf - (finf - ffast) * tauffast_exp;
         fslow = finf - (finf - fslow) * taufslow_exp;
         f = Affast * ffast + Afslow * fslow;
 
-        // fCainf = finf;
-        // taufCafast = 7.0 + 1.0 / (0.04 * exp(-(V-4.0)/7.0) + 0.04 * exp((V-4.0)/7.0));
-        // taufCaslow = 100.0 + 1.0 / (0.00012 * exp(-V/3.0) + 0.00012 * exp(V/7.0));
-        // fCafast = fCainf - (fCainf - fCafast) * exp(-dt/taufCafast);
-        // fCaslow = fCainf - (fCainf - fCaslow) * exp(-dt/taufCaslow);
-        // AfCafast = 0.3 + 0.6 / (1.0 + exp((V-10.0)/10.0));
-        // AfCaslow = 1.0 - AfCafast;
-        // fCa = AfCafast * fCafast + AfCaslow * fCaslow;
         fCafast = finf - (finf - fCafast) * taufCafast_exp;
         fCaslow = finf - (finf - fCaslow) * taufCaslow_exp;
         AfCaslow = 1.0 - AfCafast;
         fCa = AfCafast * fCafast + AfCaslow * fCaslow;
 
-        // jCainf = fCainf;
-        // jCa = jCainf - (jCainf - jCa) * exp(-dt/taujCa);
         jCa = finf - (finf - jCa) * taujCa_exp;
 
-        // fCaMKinf = finf;
-        // taufCaMKfast = 2.5 * tauffast;
-        // fCaMKfast = fCaMKinf - (fCaMKinf - fCaMKfast) * exp(-dt/taufCaMKfast);
-        // fCaMKslow = fslow;
-        // fCaMK = AfCaMKfast * fCaMKfast + AfCaMKslow * fCaMKslow;
         fCaMKfast = finf - (finf - fCaMKfast) * taufCaMKfast_exp;
         fCaMK = AfCaMKfast * fCaMKfast + AfCaMKslow * fslow;
 
-        // fCaCaMKinf = finf;
-        // taufCaCaMKfast = 2.5 * taufCafast;
-        // fCaCaMKslow = fCaslow;
-        // fCaCaMKfast = fCaCaMKinf - (fCaCaMKinf - fCaCaMKfast) * exp(-dt/taufCaCaMKfast);
-        // fCaCaMK = AfCaCaMKfast * fCaCaMKfast + AfCaCaMKslow * fCaCaMKslow;
         fCaCaMKfast = finf - (finf - fCaCaMKfast) * taufCaCaMKfast_exp;
         fCaCaMK = AfCaCaMKfast * fCaCaMKfast + AfCaCaMKslow * fCaslow;
 
@@ -648,15 +564,6 @@ void main() {
         alphan = alphan * alphan;
         alphan = 1.0 / (kp2n/km2n + alphan);
         n = alphan * (kp2n/km2n) - (alphan * (kp2n/km2n) - n) * exp(-km2n*dt);
-
-        // PsiCa = zCa*zCa * V*FFRT * (gammaCai * Ca_ss * exp(zCa*V*FRT) - gammaCao * Ca_o) / (exp(zCa*V*FRT) - 1.0);
-        // ICaLbar = PCa * PsiCa;
-
-        // PsiCaNa = zNa*zNa * V*FFRT * (gammaNai * Na_ss * exp(zNa*V*FRT) - gammaNao * Na_o) / (exp(zNa*V*FRT) - 1.0);
-        // ICaNabar = PCaNa * PsiCaNa;
-
-        // PsiCaK = zK*zK * V*FFRT * (gammaKi * K_ss * exp(zK*V*FRT) - gammaKo * K_o) / (exp(zK*V*FRT) - 1.0);
-        // ICaKbar = PCaK * PsiCaK;
 
         // TODO: can precompute more and maybe avoid conditional
         if (abs(V) < 0.01) {
@@ -688,37 +595,18 @@ void main() {
         // Rapid delayed rectifier potassium current (IKr)
         //
 
-        // xrinf = 1.0 / (1.0 + exp(-(V+8.337)/6.789));
-        // tauxrfast = 12.98 + 1.0 / (0.3652 * exp((V-31.66)/3.869) + 4.123e-5 * exp(-(V-47.78)/20.38));
-        // tauxrslow = 1.865 + 1.0 / (0.06629 * exp((V-34.70)/7.355) + 1.128e-5 * exp(-(V-29.74)/25.94));
-        // xrfast = xrinf - (xrinf - xrfast) * exp(-dt/tauxrfast);
-        // xrslow = xrinf - (xrinf - xrslow) * exp(-dt/tauxrslow);
-        // Axrfast = 1.0 / (1.0 + exp((V+54.81)/38.21));
-        // Axrslow = 1.0 - Axrfast;
-        // xr = Axrfast * xrfast + Axrslow * xrslow;
         xrfast = xrinf - (xrinf - xrfast) * tauxrfast_exp;
         xrslow = xrinf - (xrinf - xrslow) * tauxrslow_exp;
         Axrslow = 1.0 - Axrfast;
         xr = Axrfast * xrfast + Axrslow * xrslow;
 
-        // RKr = 1.0 / ((1.0 + exp((V+55.0)/75.0)) * (1.0 + exp((V-10.0)/30.0)));
-
-        // IKr = GKrbar * sqrt(K_o/5.4) * xr * RKr * (V - EK);
         IKr = GKrbar * sqrtko54 * xr * RKr * (V - EK);
 
         //
         // Slow delayed rectifier potassium current (IKs)
         //
 
-        // // Note: The tail below -15mV looks slightly different than Figure 3D from the paper.
-        // xs1inf = 1.0 / (1.0 + exp(-(V+11.60)/8.932));
-        // tauxs1 = 817.3 + 1.0 / (2.326e-4 * exp((V+48.28)/17.80) + 0.001292 * exp(-(V+210.0)/230.0));
-        // xs1 = xs1inf - (xs1inf - xs1) * exp(-dt/tauxs1);
         xs1 = xs1inf - (xs1inf - xs1) * tauxs1_exp;
-
-        // xs2inf = xs1inf;
-        // tauxs2 = 1.0 / (0.01 * exp((V-50.0)/20.0) + 0.0193 * exp(-(V+66.54)/31.0));
-        // xs2 = xs2inf - (xs2inf - xs2) * exp(-dt/tauxs2);
         xs2 = xs1inf - (xs1inf - xs2) * tauxs2_exp;
 
         // TODO: replace with table over Ca vals?
@@ -728,23 +616,13 @@ void main() {
         // Inward rectifier potassium current (IK1)
         //
 
-        // xK1inf = 1.0 / (1.0 + exp(-(V+2.5538*K_o+144.59)/(1.5692*K_o+3.8115)));
-        // // Note: The plot in Figure 2C of the paper has larger values, but the same shape, than found
-        // // here.
-        // tauxK1 = 122.2 / (exp(-(V+127.2)/20.36) + exp((V+236.8)/69.33));
-        // xK1 = xK1inf - (xK1inf - xK1) * exp(-dt/tauxK1);
         xK1 = xK1inf - (xK1inf - xK1) * tauxK1_exp;
-
-        // RK1 = 1.0 / (1.0 + exp((V+105.8-2.6*K_o)/9.493));
 
         IK1 = GK1bar * sqrtko * xK1 * RK1 * (V - EK);
 
         //
         // Sodium/calcium exchange current (INaCa)
         //
-
-        // hCa = exp(qCa*V*FRT);
-        // hNa = exp(qNa*V*FRT);
 
         h1i = 1.0 + (Na_i*invkNa3) * (1.0 + hNa);
         h1ss = 1.0 + (Na_ss*invkNa3) * (1.0 + hNa);
@@ -817,9 +695,6 @@ void main() {
         // Sodium/potassium ATPase current (INaK)
         //
 
-        // KNai = KNaio * exp((Delta*V*FRT)/3.0);
-        // KNao = KNaoo * exp(((1.0-Delta)*V*FRT)/3.0);
-
         P = SigmaP / (1.0 + Hp*invKHP + Na_i*invKNaP + K_i*invKKP);
 
         NaiKNai3 = Na_i * invKNai;
@@ -869,14 +744,8 @@ void main() {
         // Background currents (INab, ICab, IKb) and sarcolemmal calcium pump current (IpCa)
         //
 
-        // // TODO: use exp_znavfrt from table for Na_i coefficient
-        // INab = PNab * zNa * zNa * V * FFRT * (Na_i * exp(zNa*V*FRT) - Na_o) / (exp(zNa*V*FRT) - 1.0);
-        // // TODO: use exp_zcavfrt from table for Ca_i coefficient
-        // ICab = PCab * zCa * zCa * V * FFRT * (gammaCai * Ca_i * exp(zCa*V*FRT) - gammaCao * Ca_o) / (exp(zCa*V*FRT) - 1.0);
         INab = PNab * INab_coeff * (Na_i * exp_znavfrt - Na_o);
         ICab = PCab * ICab_coeff * (gammaCai * Ca_i * exp_zcavfrt - gammaCao * Ca_o);
-
-        // xKb = 1.0 / (1.0 + exp(-(V-14.48)/18.34));
 
         IKb = GKbbar * xKb * (V - EK);
         IpCa = GpCabar * (Ca_i / (0.0005 + Ca_i));
