@@ -175,6 +175,33 @@ const float invKHP = 1.0 / KHP;
 const float invKNaP = 1.0 / KNaP;
 const float invKKP = 1.0 / KKP;
 
+const float zcafgcai = zCa * FF * gammaCai;
+const float zcafgcaocao = zCa * FF * gammaCao * Ca_o;
+const float znafgnai = zNa * FF * gammaNai;
+const float znafgnaonao = zCa * FF * gammaNao * Na_o;
+const float zkfgki = zK * FF * gammaKi;
+const float zkfgkoko = zK * FF * gammaKo * K_o;
+const float zca2frtgcai = zCa * zCa * FFRT * gammaCai;
+const float zna2frtgnai = zNa * zNa * FFRT * gammaNai;
+const float zk2frtgki = zK * zK * FFRT * gammaKi;
+const float zca2frtgcaocao = zCa * zCa * FFRT * gammaCao * Ca_o;
+const float zna2frtgnaonao = zNa * zNa * FFRT * gammaNao * Na_o;
+const float zk2frtgkoko = zK * zK * FFRT * gammaKo * K_o;
+
+const float acapofvmyo = Acap / (FF*vmyo);
+const float acapo2fvmyo = Acap / (2.0*FF*vmyo);
+const float vssovmyo = vss / vmyo;
+const float acapofvss = Acap / (FF*vss);
+const float acapo2fvss = Acap / (2.0*FF*vss);
+const float vnsrovmyo = vnsr / vmyo;
+const float vjsrovss = vjsr / vss;
+const float vjsrovnsr = vjsr / vnsr;
+const float cmdnkmcmdn = CMDN * KmCMDN;
+const float trpnkmtrpn = TRPN * KmTRPN;
+const float bsrkmbsr = BSR * KmBSR;
+const float bslkmbsl = BSL * KmBSL;
+const float csqnkmcsqn = CSQN * KmCSQN;
+
 float biphasic_stim_f(const float t) {
     float a = (t/stim_t_scale - stim_offset_2);
 
@@ -268,7 +295,8 @@ void main() {
     float JrelNPinf, taurelNP, JrelCaMKinf, taurelCaMK, OrelCaMK, Jrel;
     float JupNP, JupCaMK, OupCaMK, Jleak, Jup;
     float Jtr;
-    float betaCai, betaCass, betaCajsr;
+    float betaCai_inv, betaCass_inv, betaCajsr_inv;
+    float bc1, bc2;
 
     float taum_exp, tauhfast_exp, tauhslow_exp, tauj_exp, tauhCaMKslow_exp, taua_exp, tauifast_exp,
         tauislow_exp, tauiCaMKfast_exp, tauiCaMKslow_exp, taud_exp, tauffast_exp, taufslow_exp,
@@ -478,7 +506,26 @@ void main() {
 
         Istim = stim;
 
-        // TODO shift bases?
+        if (abs(K_i_diff) > 0.1) {
+            K_i_base = K_i_base + K_i_diff;
+            K_i_diff = 0.0;
+        }
+
+        if (abs(K_ss_diff) > 0.1) {
+            K_ss_base = K_ss_base + K_ss_diff;
+            K_ss_diff = 0.0;
+        }
+
+        if (abs(Na_i_diff) > 0.1) {
+            Na_i_base = Na_i_base + Na_i_diff;
+            Na_i_diff = 0.0;
+        }
+
+        if (abs(Na_ss_diff) > 0.1) {
+            Na_ss_base = Na_ss_base + Na_ss_diff;
+            Na_ss_diff = 0.0;
+        }
+
         K_i = K_i_base + K_i_diff;
         K_ss = K_ss_base + K_ss_diff;
         Na_i = Na_i_base + Na_i_diff;
@@ -583,18 +630,18 @@ void main() {
         alphan = alphan * alphan;
         alphan = alphan * alphan;
         alphan = 1.0 / (kp2n/km2n + alphan);
+        // TODO replace with lookup?
         n = alphan * (kp2n/km2n) - (alphan * (kp2n/km2n) - n) * exp(-km2n*dt);
 
-        // TODO: can precompute more and maybe avoid conditional
         if (abs(V) < 0.01) {
-            // l'hopital
-            PsiCa = zCa * FF * (gammaCai * Ca_ss - gammaCao * Ca_o);
-            PsiCaNa = zNa * FF * (gammaNai * Na_ss - gammaNao * Na_o);
-            PsiCaK = zK * FF * (gammaKi * K_ss - gammaKo * K_o);
+            // L'Hopital
+            PsiCa = zcafgcai * Ca_ss - zcafgcaocao;
+            PsiCaNa = znafgnai * Na_ss - znafgnaonao;
+            PsiCaK = zkfgki * K_ss - zkfgkoko;
         } else {
-            PsiCa = zCa*zCa * V*FFRT * (gammaCai * Ca_ss * exp_zcavfrt - gammaCao * Ca_o) / (exp_zcavfrt - 1.0);
-            PsiCaNa = zNa*zNa * V*FFRT * (gammaNai * Na_ss * exp_znavfrt - gammaNao * Na_o) / (exp_znavfrt - 1.0);
-            PsiCaK = zK*zK * V*FFRT * (gammaKi * K_ss * exp_zkvfrt - gammaKo * K_o) / (exp_zkvfrt - 1.0);
+            PsiCa = V * (zca2frtgcai * Ca_ss * exp_zcavfrt - zca2frtgcaocao) / (exp_zcavfrt - 1.0);
+            PsiCaNa = V * (zna2frtgnai * Na_ss * exp_znavfrt - zna2frtgnaonao) / (exp_znavfrt - 1.0);
+            PsiCaK = V * (zk2frtgki * K_ss * exp_zkvfrt - zk2frtgkoko) / (exp_zkvfrt - 1.0);
         }
 
         ICaLbar = PCa * PsiCa;
@@ -842,28 +889,38 @@ void main() {
         // https://journals.plos.org/ploscompbiol/article/comment?id=10.1371/annotation/0b8121cd-4280-4ff7-91d9-e9887bcce396
         // (Remove INaL)
         // Na_i = Na_i + dt * (-(INa + 3.0 * INaCai + 3.0 * INaK + INab)*(Acap/(FF*vmyo)) + JdiffNa*(vss/vmyo));
-        Na_i_diff = Na_i_diff + dt * (-(INa + 3.0 * INaCai + 3.0 * INaK + INab)*(Acap/(FF*vmyo)) + JdiffNa*(vss/vmyo));
+        Na_i_diff = Na_i_diff + dt * (-(INa + 3.0 * INaCai + 3.0 * INaK + INab) * acapofvmyo + JdiffNa * vssovmyo);
         // Na_ss = Na_ss + dt * (-(ICaNa + 3.0 * INaCass) * (Acap / (FF*vss)) - JdiffNa);
-        Na_ss_diff = Na_ss_diff + dt * (-(ICaNa + 3.0 * INaCass) * (Acap / (FF*vss)) - JdiffNa);
+        Na_ss_diff = Na_ss_diff + dt * (-(ICaNa + 3.0 * INaCass) * acapofvss - JdiffNa);
         // Correction 2 from
         // https://journals.plos.org/ploscompbiol/article/comment?id=10.1371/annotation/0b8121cd-4280-4ff7-91d9-e9887bcce396
         // (IKur -> IKb)
         // K_i = K_i + dt * (-(Ito + IKr + IKs + IK1 + IKb + Istim - 2.0 * INaK)*(Acap/(FF*vmyo)) + JdiffK*(vss/vmyo));
-        K_i_diff = K_i_diff + dt * (-(Ito + IKr + IKs + IK1 + IKb + Istim - 2.0 * INaK)*(Acap/(FF*vmyo)) + JdiffK*(vss/vmyo));
+        K_i_diff = K_i_diff + dt * (-(Ito + IKr + IKs + IK1 + IKb + Istim - 2.0 * INaK) * acapofvmyo + JdiffK * vssovmyo);
         // K_ss = K_ss + dt * (-ICaK * (Acap / (FF*vss)) - JdiffK);
-        K_ss_diff = K_ss_diff + dt * (-ICaK * (Acap / (FF*vss)) - JdiffK);
+        K_ss_diff = K_ss_diff + dt * (-ICaK * acapofvss - JdiffK);
 
-        betaCai = 1.0 / (1.0 + (CMDN*KmCMDN)/(pow((KmCMDN+Ca_i), 2.0)) + (TRPN*KmTRPN)/(pow((KmTRPN+Ca_i), 2.0)));
-        Ca_i = Ca_i + dt * (betaCai * (-(IpCa + ICab - 2.0 * INaCai) * (Acap/(2.0*FF*vmyo)) - Jup * (vnsr/vmyo) + JdiffCa * (vss/vmyo)));
+        bc1 = KmCMDN+Ca_i;
+        bc1 = bc1*bc1;
+        bc2 = KmTRPN+Ca_i;
+        bc2 = bc2*bc2;
+        betaCai_inv = 1.0 + cmdnkmcmdn/bc1 + trpnkmtrpn/bc2;
+        Ca_i = Ca_i + dt * ((-(IpCa + ICab - 2.0 * INaCai) * acapo2fvmyo - Jup * vnsrovmyo + JdiffCa * vssovmyo) / betaCai_inv);
         u += save_ca * Ca_i;
 
-        betaCass = 1.0 / (1.0 + (BSR*KmBSR)/(pow((KmBSR+Ca_ss), 2.0)) + (BSL*KmBSL)/(pow((KmBSL+Ca_ss), 2.0)));
-        Ca_ss = Ca_ss + dt * (betaCass * (-(ICaL - 2.0 * INaCass) * (Acap/(2.0*FF*vss)) + Jrel * (vjsr/vss) - JdiffCa));
+        bc1 = KmBSR+Ca_ss;
+        bc1 = bc1*bc1;
+        bc2 = KmBSL+Ca_ss;
+        bc2 = bc2*bc2;
+        betaCass_inv = 1.0 + bsrkmbsr/bc1 + bslkmbsl/bc2;
+        Ca_ss = Ca_ss + dt * ((-(ICaL - 2.0 * INaCass) * acapo2fvss + Jrel * vjsrovss - JdiffCa) / betaCass_inv);
 
-        Ca_nsr = Ca_nsr + dt * (Jup - Jtr * (vjsr/vnsr));
+        Ca_nsr = Ca_nsr + dt * (Jup - Jtr * vjsrovnsr);
 
-        betaCajsr = 1.0 / (1.0 + (CSQN*KmCSQN)/(pow((KmCSQN+Ca_jsr), 2.0)));
-        Ca_jsr = Ca_jsr + dt * (betaCajsr * (Jtr - Jrel));
+        bc1 = KmCSQN+Ca_jsr;
+        bc1 = bc1*bc1;
+        betaCajsr_inv = 1.0 + csqnkmcsqn/bc1;
+        Ca_jsr = Ca_jsr + dt * ((Jtr - Jrel) / betaCajsr_inv);
 
         if (step_count > pre_pace_steps) {
             // APD only mode
