@@ -283,11 +283,25 @@ void main() {
     float tauhLCaMK_exp = exp(-dt/tauhLCaMK);
     float taujCa_exp = exp(-dt/taujCa);
 
+    float K_i_base, K_i_diff;
+    float K_ss_base, K_ss_diff;
+    float Na_i_base, Na_i_diff;
+    float Na_ss_base, Na_ss_diff;
+
+    Na_i_base = 7.23;
+    Na_i_diff = 0.0;
+    Na_ss_base = 7.23;
+    Na_ss_diff = 0.0;
+    K_i_base = 143.79;
+    K_i_diff = 0.0;
+    K_ss_base = 143.79;
+    K_ss_diff = 0.0;
+
     V = -87.84;
-    Na_i = 7.23;
-    Na_ss = 7.23;
-    K_i = 143.79;
-    K_ss = 143.79;
+    // Na_i = 7.23;
+    // Na_ss = 7.23;
+    // K_i = 143.79;
+    // K_ss = 143.79;
     Ca_i = 8.54e-5;
     Ca_ss = 8.43e-5;
     Ca_nsr = 1.61;
@@ -463,6 +477,12 @@ void main() {
         }
 
         Istim = stim;
+
+        // TODO shift bases?
+        K_i = K_i_base + K_i_diff;
+        K_ss = K_ss_base + K_ss_diff;
+        Na_i = Na_i_base + Na_i_diff;
+        Na_ss = Na_ss_base + Na_ss_diff;
 
         //
         // Calcium/calmodulin-dependent protein kinase (CaMK)
@@ -821,13 +841,17 @@ void main() {
         // Correction 1 from
         // https://journals.plos.org/ploscompbiol/article/comment?id=10.1371/annotation/0b8121cd-4280-4ff7-91d9-e9887bcce396
         // (Remove INaL)
-        Na_i = Na_i + dt * (-(INa + 3.0 * INaCai + 3.0 * INaK + INab)*(Acap/(FF*vmyo)) + JdiffNa*(vss/vmyo));
-        Na_ss = Na_ss + dt * (-(ICaNa + 3.0 * INaCass) * (Acap / (FF*vss)) - JdiffNa);
+        // Na_i = Na_i + dt * (-(INa + 3.0 * INaCai + 3.0 * INaK + INab)*(Acap/(FF*vmyo)) + JdiffNa*(vss/vmyo));
+        Na_i_diff = Na_i_diff + dt * (-(INa + 3.0 * INaCai + 3.0 * INaK + INab)*(Acap/(FF*vmyo)) + JdiffNa*(vss/vmyo));
+        // Na_ss = Na_ss + dt * (-(ICaNa + 3.0 * INaCass) * (Acap / (FF*vss)) - JdiffNa);
+        Na_ss_diff = Na_ss_diff + dt * (-(ICaNa + 3.0 * INaCass) * (Acap / (FF*vss)) - JdiffNa);
         // Correction 2 from
         // https://journals.plos.org/ploscompbiol/article/comment?id=10.1371/annotation/0b8121cd-4280-4ff7-91d9-e9887bcce396
         // (IKur -> IKb)
-        K_i = K_i + dt * (-(Ito + IKr + IKs + IK1 + IKb + Istim - 2.0 * INaK)*(Acap/(FF*vmyo)) + JdiffK*(vss/vmyo));
-        K_ss = K_ss + dt * (-ICaK * (Acap / (FF*vss)) - JdiffK);
+        // K_i = K_i + dt * (-(Ito + IKr + IKs + IK1 + IKb + Istim - 2.0 * INaK)*(Acap/(FF*vmyo)) + JdiffK*(vss/vmyo));
+        K_i_diff = K_i_diff + dt * (-(Ito + IKr + IKs + IK1 + IKb + Istim - 2.0 * INaK)*(Acap/(FF*vmyo)) + JdiffK*(vss/vmyo));
+        // K_ss = K_ss + dt * (-ICaK * (Acap / (FF*vss)) - JdiffK);
+        K_ss_diff = K_ss_diff + dt * (-ICaK * (Acap / (FF*vss)) - JdiffK);
 
         betaCai = 1.0 / (1.0 + (CMDN*KmCMDN)/(pow((KmCMDN+Ca_i), 2.0)) + (TRPN*KmTRPN)/(pow((KmTRPN+Ca_i), 2.0)));
         Ca_i = Ca_i + dt * (betaCai * (-(IpCa + ICab - 2.0 * INaCai) * (Acap/(2.0*FF*vmyo)) - Jup * (vnsr/vmyo) + JdiffCa * (vss/vmyo)));
