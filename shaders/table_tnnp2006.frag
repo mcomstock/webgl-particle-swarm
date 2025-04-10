@@ -147,10 +147,20 @@ void main() {
         float beta_xr2 = 1.12 / (1.0 + exp((V-60.0)/20.0));
         float tau_xr2 = alpha_xr2 * beta_xr2;
         table[1] = exp(-dt/tau_xr2);
-        // ICaL coefficient
-        table[2] = 4.0 * (((V-15.0)*FF*FF)/(RR*T));
-        // ICaL exponential term
-        table[3] = exp(2.0 * (V-15.0) * FF/(RR*T));
+        // ICaL CaSS coefficient
+        // L'Hopital
+        if (abs(V-15.0) < 0.01) {
+            table[2] = 0.5 * FF;
+        } else {
+            table[2] = (((FF*FF)/(RR*T)) * (V-15.0) * exp(2.0 * (V-15.0) * (FF/(RR*T)))) / (exp(2.0 * (V-15.0) * (FF/(RR*T))) - 1.0);
+        }
+        // ICaL Cao term
+        // L'Hopital
+        if (abs(V-15.0) < 0.01) {
+            table[3] = 2.0 * FF * Cao;
+        } else {
+            table[3] = 4.0 * (((FF*FF)/(RR*T)) * (V-15.0) * Cao) / (exp(2.0 * (V-15.0) * (FF/(RR*T))) - 1.0);
+        }
         break;
     case 6:
         // IpK coefficient

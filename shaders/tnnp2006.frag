@@ -150,11 +150,18 @@ void main() {
 
     float time;
 
+    float Kibase, Kidiff;
+    float Naibase, Naidiff;
+
+    Kibase = 136.0;
+    Naibase = 9.413;
 #if defined EPI
     V = -85.46;
     Rhat = 0.9891;
-    Nai = 9.293;
-    Ki = 136.2;
+    // Nai = 9.293;
+    Naidiff = 9.293 - Naibase;
+    // Ki = 136.2;
+    Kidiff = 0.2;
     Cai = 0.0001156;
     CaSS = 0.002331;
     CaSR = 3.432;
@@ -169,8 +176,10 @@ void main() {
 #elif defined MYO
     V = -84.53;
     Rhat = 0.9874;
-    Nai = 9.322;
-    Ki = 136.0;
+    // Nai = 9.322;
+    Naidiff = 9.322 - Naibase;
+    // Ki = 136.0;
+    Kidiff = 0.0;
     Cai = 0.0001156;
     CaSS = 0.002331;
     CaSR = 4.130;
@@ -185,8 +194,10 @@ void main() {
 #else
     V = -84.70;
     Rhat = 0.9891;
-    Nai = 9.413;
-    Ki = 136.1;
+    // Nai = 9.413;
+    Naidiff = 9.413 - Naibase;
+    // Ki = 136.1;
+    Kidiff = 0.1;
     Cai = 0.0001021;
     CaSS = 0.002111;
     CaSR = 3.385;
@@ -225,7 +236,7 @@ void main() {
     vec4 table_val1, table_val2;
 
     float tau_m_exp, tau_h_exp, tau_j_exp, tau_xs_exp, tau_d_exp, tau_f_exp, tau_f2_exp, tau_r_exp, tau_s_exp, tau_xr1_exp, tau_xr2_exp;
-    float ICaL_coeff, ICaL_exp, IpK_coeff, INaCa_Nai_coeff, INaCa_Cai_coeff, INaK_coeff;
+    float ICaL_CaSS_coeff, ICaL_Cao, IpK_coeff, INaCa_Nai_coeff, INaCa_Cai_coeff, INaK_coeff;
 
     float u, prev_u;
     float save_ca = float(data_type == 2);
@@ -245,22 +256,6 @@ void main() {
         // Indexing
         vidxint = invvrange * (V - table_vmin);
         vidx1 = int(round(vidxint));
-        // vidx1 = int(floor(vidxint));
-        // vidx2 = vidx1 + 1;
-        // wv1 = float(vidx2) - vidxint;
-        // wv2 = vidxint - float(vidx1);
-
-        // Lookup
-/* #define SET_TABLE_VALS(SEQ, IDX1, IDX2) {                               \ */
-/*             table_idx1 = (SEQ) * table_npoints + (IDX1);                \ */
-/*             table_idx2 = (SEQ) * table_npoints + (IDX2);                \ */
-/*             table_idx1_2d[0] = table_idx1 & 511;                        \ */
-/*             table_idx1_2d[1] = table_idx1 >> 9;                         \ */
-/*             table_idx2_2d[0] = table_idx2 & 511;                        \ */
-/*             table_idx2_2d[1] = table_idx2 >> 9;                         \ */
-/*             table_val1 = texelFetch(table, table_idx1_2d, 0);           \ */
-/*             table_val2 = texelFetch(table, table_idx2_2d, 0);           \ */
-/*         } */
 
 #define SET_TABLE_VALS(SEQ, IDX1) {                             \
             table_idx1 = (SEQ) * table_npoints + (IDX1);        \
@@ -269,77 +264,42 @@ void main() {
             table_val1 = texelFetch(table, table_idx1_2d, 0);   \
         }
 
-        /* SET_TABLE_VALS(0, vidx1, vidx2); */
-        /* m_inf = wv1*table_val1[0] + wv2*table_val2[0]; */
-        /* tau_m_exp = wv1*table_val1[1] + wv2*table_val2[1]; */
-        /* h_inf = wv1*table_val1[2] + wv2*table_val2[2]; */
-        /* tau_h_exp = wv1*table_val1[3] + wv2*table_val2[3]; */
         SET_TABLE_VALS(0, vidx1);
         m_inf = table_val1[0];
         tau_m_exp = table_val1[1];
         h_inf = table_val1[2];
         tau_h_exp = table_val1[3];
 
-        /* SET_TABLE_VALS(1, vidx1, vidx2); */
-        /* j_inf = wv1*table_val1[0] + wv2*table_val2[0]; */
-        /* tau_j_exp = wv1*table_val1[1] + wv2*table_val2[1]; */
-        /* xs_inf = wv1*table_val1[2] + wv2*table_val2[2]; */
-        /* tau_xs_exp = wv1*table_val1[3] + wv2*table_val2[3]; */
         SET_TABLE_VALS(1, vidx1);
         j_inf = table_val1[0];
         tau_j_exp = table_val1[1];
         xs_inf = table_val1[2];
         tau_xs_exp = table_val1[3];
 
-        /* SET_TABLE_VALS(2, vidx1, vidx2); */
-        /* d_inf = wv1*table_val1[0] + wv2*table_val2[0]; */
-        /* tau_d_exp = wv1*table_val1[1] + wv2*table_val2[1]; */
-        /* f_inf = wv1*table_val1[2] + wv2*table_val2[2]; */
-        /* tau_f_exp = wv1*table_val1[3] + wv2*table_val2[3]; */
         SET_TABLE_VALS(2, vidx1);
         d_inf = table_val1[0];
         tau_d_exp = table_val1[1];
         f_inf = table_val1[2];
         tau_f_exp = table_val1[3];
 
-        /* SET_TABLE_VALS(3, vidx1, vidx2); */
-        /* f2_inf = wv1*table_val1[0] + wv2*table_val2[0]; */
-        /* tau_f2_exp = wv1*table_val1[1] + wv2*table_val2[1]; */
-        /* r_inf = wv1*table_val1[2] + wv2*table_val2[2]; */
-        /* tau_r_exp = wv1*table_val1[3] + wv2*table_val2[3]; */
         SET_TABLE_VALS(3, vidx1);
         f2_inf = table_val1[0];
         tau_f2_exp = table_val1[1];
         r_inf = table_val1[2];
         tau_r_exp = table_val1[3];
 
-        /* SET_TABLE_VALS(4, vidx1, vidx2); */
-        /* s_inf = wv1*table_val1[0] + wv2*table_val2[0]; */
-        /* tau_s_exp = wv1*table_val1[1] + wv2*table_val2[1]; */
-        /* xr1_inf = wv1*table_val1[2] + wv2*table_val2[2]; */
-        /* tau_xr1_exp = wv1*table_val1[3] + wv2*table_val2[3]; */
         SET_TABLE_VALS(4, vidx1);
         s_inf = table_val1[0];
         tau_s_exp = table_val1[1];
         xr1_inf = table_val1[2];
         tau_xr1_exp = table_val1[3];
 
-        /* SET_TABLE_VALS(5, vidx1, vidx2); */
-        /* xr2_inf = wv1*table_val1[0] + wv2*table_val2[0]; */
-        /* tau_xr2_exp = wv1*table_val1[1] + wv2*table_val2[1]; */
-        /* ICaL_coeff = wv1*table_val1[2] + wv2*table_val2[2]; */
-        /* ICaL_exp = wv1*table_val1[3] + wv2*table_val2[3]; */
         SET_TABLE_VALS(5, vidx1);
         xr2_inf = table_val1[0];
         tau_xr2_exp = table_val1[1];
-        ICaL_coeff = table_val1[2];
-        ICaL_exp = table_val1[3];
+        ICaL_CaSS_coeff = table_val1[2];
+        ICaL_Cao = table_val1[3];
 
-        /* SET_TABLE_VALS(6, vidx1, vidx2); */
-        /* IpK_coeff = wv1*table_val1[0] + wv2*table_val2[0]; */
-        /* INaCa_Nai_coeff = wv1*table_val1[1] + wv2*table_val2[1]; */
-        /* INaCa_Cai_coeff = wv1*table_val1[2] + wv2*table_val2[2]; */
-        /* INaK_coeff = wv1*table_val1[3] + wv2*table_val2[3]; */
         SET_TABLE_VALS(6, vidx1);
         IpK_coeff = table_val1[0];
         INaCa_Nai_coeff = table_val1[1];
@@ -361,6 +321,19 @@ void main() {
         }
 
         Istim = stim;
+
+        // TODO check performance
+        if (abs(Kidiff) > 1.0) {
+            Kibase = Kibase + Kidiff;
+            Kidiff = 0.0;
+        }
+        Ki = Kibase + Kidiff;
+
+        if (abs(Naidiff) > 0.1) {
+            Naibase = Naibase + Naidiff;
+            Naidiff = 0.0;
+        }
+        Nai = Naibase + Naidiff;
 
         m = m_inf - (m_inf - m) * tau_m_exp;
         h = h_inf - (h_inf - h) * tau_h_exp;
@@ -389,16 +362,10 @@ void main() {
          */
 
         // Indexing
-        vekidxint = invvekrange * (V - EK - table_vekmin);
+        vekidxint = invvekrange * ((V - EK) - table_vekmin);
         vekidx1 = int(round(vekidxint));
-        /* vekidx1 = int(floor(vekidxint)); */
-        /* vekidx2 = vekidx1 + 1; */
-        /* wvek1 = float(vekidx2) - vekidxint; */
-        /* wvek2 = vekidxint - float(vekidx1); */
 
         // Lookup
-        /* SET_TABLE_VALS(7, vekidx1, vekidx2); */
-        /* xK1_inf = wvek1*table_val1[0] + wvek2*table_val2[0]; */
         SET_TABLE_VALS(7, vekidx1);
         xK1_inf = table_val1[0];
 
@@ -406,7 +373,7 @@ void main() {
          * End V-EK table retrieval
          */
 
-        ICaL = GCaL * d * f * f2 * fcass * ICaL_coeff * ((0.25 * CaSS * ICaL_exp - Cao) / (ICaL_exp - 1.0));
+        ICaL = GCaL * d * f * f2 * fcass * (ICaL_CaSS_coeff * CaSS - ICaL_Cao);
 
         IKs = GKs * xs * xs * (V - EKs);
         INa = GNa * m * m * m * h * j * (V - ENa);
@@ -416,14 +383,15 @@ void main() {
         IK1 = GK1 * Ko54sqrt * xK1_inf * (V-EK);
 
         INaCa = kNaCa * (INaCa_Nai_coeff*Nai*Nai*Nai - INaCa_Cai_coeff*Cai);
-        INaK = PNaK*Nai*INaK_coeff;
+        INaK = PNaK*Ko*Nai / ((Ko+KmK) * (Nai+KmNa) * (1.0 + 0.1245*exp(-0.1*V*FF/(RR*T)) + 0.0353 * exp(-V*FF/(RR*T))));
         IpCa = GpCa * Cai / (KpCa + Cai);
         IpK = GpK * (V-EK) * IpK_coeff;
         IbNa = GbNa * (V - ENa);
         IbCa = GbCa * (V - ECa);
 
-        Nai = Nai + dt * (-(INa + IbNa + 3.0*(INaK+INaCa)) * invvcf) * capacitance;
-        Ki = Ki + dt * (-(IK1 + Ito + IKr + IKs + (-2.0*INaK) + IpK + Istim) * invvcf) * capacitance;
+        // Track differences to avoid precision issue of adding small differences to large values
+        Naidiff = Naidiff + dt * (-(INa + IbNa + 3.0*(INaK+INaCa)) * invvcf) * capacitance;
+        Kidiff = Kidiff + dt * (-(IK1 + Ito + IKr + IKs + (-2.0*INaK) + IpK + Istim) * invvcf) * capacitance;
 
         kcasr = maxsr - ((maxsr - minsr) / (1.0 + ecsq/(CaSR*CaSR)));
         k1 = k1p / kcasr;
@@ -432,7 +400,8 @@ void main() {
         O = (k1 * CaSS * CaSS * Rhat) / (k3 + k1 * CaSS * CaSS);
 
         Ileak = Vleak * (CaSR - Cai);
-        Iup = Vmaxup / (1.0 + (Kup * Kup)/(Cai * Cai));
+        Iup = Kup / Cai;
+        Iup = Vmaxup / (1.0 + Iup*Iup);
         Irel = Vrel * O * (CaSR - CaSS);
         Ixfer = Vxfer * (CaSS - Cai);
 
@@ -440,7 +409,9 @@ void main() {
         dCaitotal = dt * (-((IbCa + IpCa - 2.0*INaCa) * capacitance) * 0.5 * invvcf + vsrovc*(Ileak-Iup) + Ixfer);
         bi = Bufc - Caibufc - dCaitotal - Cai + Kbufc;
         ci = Kbufc * (Caibufc + dCaitotal + Cai);
-        Cai = (sqrt(bi*bi + 4.0 * ci) - bi) * 0.5;
+        // Use a different form of the equation to avoid cancelation for very small bi/ci values
+        Cai = 4.0 * (ci / (bi * bi));
+        Cai = (0.5 * bi * Cai) / (sqrt(1.0 + Cai) + 1.0);
 
         Casrbufsr = (CaSR * Bufsr) / (CaSR + Kbufsr);
         dCaSRtotal = dt * (Iup - Ileak - Irel);
