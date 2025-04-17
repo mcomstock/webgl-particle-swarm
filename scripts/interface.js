@@ -438,7 +438,7 @@ define('scripts/interface', [
       const model = this.model_select.value;
       PsoInterface.param_lists[model].forEach((param, idx) => {
         // this[model][param + '_val'].value = bestArr[idx];
-        this[model][param + '_val'].value = bestArr[idx].toFixed(3);
+        this[model][param + '_val'].value = bestArr[idx].toPrecision(3);
 
       });
     }
@@ -521,7 +521,7 @@ define('scripts/interface', [
     }
 
     truncateString(num) {
-      return Number.parseFloat(num).toFixed(2).toString();
+      return Number.parseFloat(num).toPrecision(2).toString();
     }
 
     getHyperparams() {
