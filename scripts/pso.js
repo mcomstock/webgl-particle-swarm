@@ -422,8 +422,6 @@ define('scripts/pso', [
       const align_thresh = [];
       const all_full_normalized_data = [];
 
-      const delta = 0.001;
-
       for (let i = 0; i < raw_input_data.length; ++i) {
         if (datatypes[i] === 'apd') {
           const apd_data = raw_input_data[i];
@@ -438,6 +436,7 @@ define('scripts/pso', [
           align_thresh.push(0);
           all_full_normalized_data.push(apd_data);
         } else {
+          const delta = datatypes[i] === 'calcium' ? 1e-7 : 0.001;
           const nthresh = datatypes[i] === 'calcium' ? this.env.simulation.normalized_ca_align_threshold : this.env.simulation.normalized_align_threshold;
           const raw_text = raw_input_data[i];
 
@@ -449,7 +448,7 @@ define('scripts/pso', [
 
           const data_max = Math.max(...full_normalized_data);
           const data_min = Math.min(...full_normalized_data);
-          const actual_align_thresh = (nthresh-data_min)/(data_max-data_min);
+          const actual_align_thresh = data_min + nthresh * (data_max-data_min);
           const first_compare_index = full_normalized_data.findIndex(number => number > actual_align_thresh);
 
           const left_trimmed_data = full_normalized_data.slice(first_compare_index);
