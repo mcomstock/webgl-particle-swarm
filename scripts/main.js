@@ -184,6 +184,8 @@ require([
     const iteration_error = {};
     const iteration_velocities = {};
 
+    const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
+
     for (let iter = 0; iter < iteration_count; ++iter) {
       pso_interface.updateStatusDisplay(iter, iteration_count);
       await pso.runOneIteration();
@@ -195,6 +197,13 @@ require([
       }
 
       best_error_list.push(pso.env.particles.best_error_value);
+
+      await nextframe();
+      error_graph.clearGraph();
+      const errmin = Math.min(...best_error_list);
+      const errmax = Math.max(...best_error_list);
+      error_graph.runGraph(best_error_list, [0,0,0], iteration_count, [errmin, errmax]);
+      pso_interface.setErrorAxes(1, iteration_count, errmin, errmax);
     }
 
     pso_interface.updateStatusDisplay(iteration_count, iteration_count);
