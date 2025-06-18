@@ -178,3 +178,41 @@ decrease significantly with further iterations even for the last few iterations,
 achieved by increasing the number of iterations. On the other hand, if many of the final iterations
 do not improve the best fit error, reducing the number of iterations may lead to similar fit quality
 while reducing the amount of computation and time required to generate a fit.
+
+## Potential failure cases
+
+Although support for the WebGL API is available in most modern web browsers, correctly implemented
+WebGL programs are still not guaranteed to work. The WebGL API (and the browser in general) has
+limited access to graphics hardware, which is ultimately controlled by the operating system, often
+without providing the users direct means to configure settings related to the utilization of
+graphics hardware.
+
+WebGL programs that place a large burden on graphics hardware typically face several
+limitations. The first is that the program must use whatever GPU the operating system has assigned
+to render graphics for the browser. A common problem that arises from this arrangement occurs when a
+computer has multiple GPUs, as the correct GPU must be assigned to the browser using either
+operating system or browser settings. Another common issue arises when the load placed on the GPU by
+the WebGL program is too high---the definition of too high is again determined by either the
+operating system or the browser and is not controlled by the program itself. In such cases, the
+program will lose access to the WebGL context used to access the GPU, and the program will
+ultimately fail to run successfully. The exact manifestation of this issue can take several forms
+depending on both the browser and operating system, such as an error message indicating that the
+context was lost or the browser freezing or even crashing entirely. In cases where this issue is
+encountered, a possible solution is to attempt to reduce the load on the GPU by stopping other
+programs that use system resources while the program is running or to disable power-saving settings
+(for example, by connecting a laptop to a power source). Another possible solution is to reduce the
+number of particles, the complexity of the model being fit, or the simulation time required to fit
+the data in the settings described above if more powerful hardware is not available. Increasing or
+reducing the iteration count usually does not affect this issue, as the maximum resource usage
+achieved by the program depends on the amount of work per iteration, so the program is likely to
+succeed once the first few iterations have completed. Yet another potential cause of failure is due
+to issues in the implementation of graphics drivers. These issues are best avoided by keeping the
+system software drivers up to date, and are generally specific to the combination of operating
+system and hardware.
+
+Most operating systems and browsers are configured so that graphical applications will not run when
+they are not visible on-screen. Therefore, running a PSO fit with the browser not in focus or
+viewing a different tab will usually result in the program running extremely slowly or stopping
+entirely. In some cases, it may be possible to configure the browser to run graphical applications
+when they are not in focus, although this behavior is generally not desirable, particularly if many
+browser tabs are open at once.
