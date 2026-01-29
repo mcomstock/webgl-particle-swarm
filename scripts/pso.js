@@ -26,6 +26,7 @@ define('scripts/pso', [
   'text!shaders/tnnp2006.frag',
   'text!shaders/ovvr.frag',
   'text!shaders/ortp.frag',
+  'text!shaders/aliev-paniflov.frag',
 ], function(
   GlHelper,
   CopyShader,
@@ -54,6 +55,7 @@ define('scripts/pso', [
   Tnnp2006Shader,
   OvvrShader,
   OrtpShader,
+  APShader,
 ) {
   'use strict';
 
@@ -335,6 +337,11 @@ define('scripts/pso', [
           // gna     gto   pca      pcana    pcak       pcacamk  pcanacamk pcakcamk   gkr    gks     gk1     gnaca   gnak  pnab       pcab     gkb     gpca
           [  7.419,  0.01, 0.00005, 6.25e-8, 1.787e-8, 5.5e-5,  6.875e-8, 1.9657e-8, 0.023, 0.0017, 0.0954, 0.0004, 15.0, 1.875e-10, 1.25e-8, 0.0015, 0.00025],
           [  29.676, 0.04, 0.0002,  2.5e-7,  7.148e-8, 0.00022, 2.75e-7,  7.8628e-8, 0.092, 0.0068, 0.3816, 0.0016, 60.0, 7.5e-10,   5.0e-8,  0.006,  0.001],
+        ],
+        ap_bounds: [
+          // k    a      b      eps0     mu1    mu2 
+          [1.0,   0.01, 0.08, 0.0005,   0.05,   0.05], // min parameter bounds
+          [20.0,  0.5,   0.5,   0.2,   0.5,   1] // max parameter bounds
         ],
         velocity_update: {},
       };
@@ -752,6 +759,8 @@ define('scripts/pso', [
         case 'ortp':
           model_frag = OrtpShader;
           break;
+        case 'ap':
+          model_frag = APShader;
         default:
           console.log("How could no model be selected oh no!");
         }

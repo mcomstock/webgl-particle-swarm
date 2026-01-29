@@ -14,6 +14,7 @@ define('scripts/interface', [
       tnnp2006: ['tnnp2006_gna', 'tnnp2006_gk1', 'tnnp2006_gto', 'tnnp2006_gkr', 'tnnp2006_gks', 'tnnp2006_gcal', 'tnnp2006_gpk', 'tnnp2006_gpca', 'tnnp2006_gbna', 'tnnp2006_gbca', 'tnnp2006_pnak', 'tnnp2006_knaca'],
       ovvr: ['ovvr_gnafast', 'ovvr_gnalate', 'ovvr_gto', 'ovvr_pca', 'ovvr_pcana', 'ovvr_pcak', 'ovvr_pcacamk', 'ovvr_pcanacamk', 'ovvr_pcakcamk', 'ovvr_gkr', 'ovvr_gks', 'ovvr_gk1', 'ovvr_gnaca', 'ovvr_gnak', 'ovvr_pnab', 'ovvr_pcab', 'ovvr_gkb', 'ovvr_gpca'],
       ortp: ['ortp_gna', 'ortp_gto', 'ortp_pca', 'ortp_pcana', 'ortp_pcak', 'ortp_pcacamk', 'ortp_pcanacamk', 'ortp_pcakcamk', 'ortp_gkr', 'ortp_gks', 'ortp_gk1', 'ortp_gnaca', 'ortp_gnak', 'ortp_pnab', 'ortp_pcab', 'ortp_gkb', 'ortp_gpca'],
+      ap: ['ap_k', 'ap_a', 'ap_b', 'ap_eps0', 'ap_mu1', 'ap_mu2'],
     };
 
     static default_normalization = {
@@ -62,6 +63,11 @@ define('scripts/interface', [
         max: 43.29,
         min: -87.85,
       },
+      ap: {
+        normalize: true,
+        max: 1,
+        min: 0,
+      }
     };
 
     static data_type_names = {

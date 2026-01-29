@@ -193,7 +193,7 @@ define('scripts/graph', [
       offset ||= 0;
 
       uniform_values.color = color;
-      uniform_values.num_points = num_points || graph_points.length;
+      uniform_values.num_points = Math.max(num_points, graph_points.length);
 
       if (!scale) {
         uniform_values.min_val = Math.min(...graph_points);
@@ -265,7 +265,8 @@ define('scripts/graph', [
       set_uniforms(uniform_locations, uniform_values);
 
       this.useGraphVertexBuffer(program, graph_buffer);
-
+      console.log(graph_points.length)
+      console.log(this.gl.ARRAY_BUFFER)
       gl.drawArrays(gl.LINE_STRIP, 0, graph_points.length);
 
       this.runGrid([0.8, 0.8, 0.8]);
