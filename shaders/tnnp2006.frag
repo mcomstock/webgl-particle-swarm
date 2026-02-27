@@ -7,16 +7,23 @@ precision highp int;
 #define ENDO
 
 uniform sampler2D in_particles_1, data_texture;
+uniform sampler2D state_textures_0, state_textures_1, state_textures_2, state_textures_3, state_textures_4;
 
 layout (location = 0) out vec4 error_texture;
+layout (location = 1) out vec4 state_out_texture_0;
+layout (location = 2) out vec4 state_out_texture_1;
+layout (location = 3) out vec4 state_out_texture_2;
+layout (location = 4) out vec4 state_out_texture_3;
+layout (location = 5) out vec4 state_out_texture_4;
 
 in vec2 cc;
 
 uniform float dt, period;
-uniform int num_beats, pre_beats, data_type, err_type;
+uniform int num_beats, data_type, err_type;
 uniform float align_thresh;
 uniform float sample_interval, apd_thresh, weight;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
+uniform bool prepacing;
 uniform bool stim_biphasic;
 
 uniform sampler2D table;
@@ -104,10 +111,8 @@ float square_stim_f(const float t) {
 
 void main() {
     int num_period = int(ceil(period/dt));
-    int total_beats = pre_beats + num_beats;
+    int total_beats = prepacing ? 1 : num_beats;
     float endtime = ceil(float(total_beats)*period);
-    float pre_pace_endtime = ceil(float(pre_beats)*period);
-    int pre_pace_steps = int(ceil(pre_pace_endtime/dt));
     int num_steps = int(ceil(endtime/dt));
 
     ivec2 tex_size = textureSize(in_particles_1, 0);

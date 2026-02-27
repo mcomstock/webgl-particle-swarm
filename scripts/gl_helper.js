@@ -229,13 +229,23 @@ define('scripts/gl_helper', [], function() {
       }
     }
 
-    runSimulation(gl_helper, framebuffer, program, uniforms, locations, out_textures, dims, cl_idx, clear) {
+    runSimulation(gl_helper, framebuffer, program, uniforms, locations, out_textures, dims, cl_idx, clear, no_blend) {
       const gl = gl_helper.gl;
 
       gl.useProgram(program);
       gl_helper.setUniforms(uniforms, locations, cl_idx);
 
-      const draw_buffers = gl_helper.attachTextures(framebuffer, out_textures);
+      // TODO terrible
+      const actual_out_textures = [];
+      for (let i = 0; i < out_textures.length; ++i) {
+        if (typeof out_textures[i] === 'function') {
+          actual_out_textures.push(out_textures[i](cl_idx));
+        } else {
+          actual_out_textures.push(out_textures[i]);
+        }
+      }
+
+      const draw_buffers = gl_helper.attachTextures(framebuffer, actual_out_textures);
 
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebuffer);
       gl.drawBuffers(draw_buffers);
@@ -248,9 +258,11 @@ define('scripts/gl_helper', [], function() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       }
 
-      gl.enable(gl.BLEND);
-      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE);
-      gl.blendEquation(gl.FUNC_ADD);
+      if (!no_blend) {
+        gl.enable(gl.BLEND);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE);
+        gl.blendEquation(gl.FUNC_ADD);
+      }
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
@@ -276,7 +288,17 @@ define('scripts/gl_helper', [], function() {
       gl.useProgram(program);
       gl_helper.setUniforms(uniforms, locations, cl_idx);
 
-      const draw_buffers = gl_helper.attachTextures(framebuffer, out_textures);
+      // TODO terrible
+      const actual_out_textures = [];
+      for (let i = 0; i < out_textures.length; ++i) {
+        if (typeof out_textures[i] === 'function') {
+          actual_out_textures.push(out_textures[i](cl_idx));
+        } else {
+          actual_out_textures.push(out_textures[i]);
+        }
+      }
+
+      const draw_buffers = gl_helper.attachTextures(framebuffer, actual_out_textures);
 
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebuffer);
       gl.drawBuffers(draw_buffers);

@@ -265,8 +265,8 @@ define('scripts/graph', [
       set_uniforms(uniform_locations, uniform_values);
 
       this.useGraphVertexBuffer(program, graph_buffer);
-      console.log(graph_points.length)
-      console.log(this.gl.ARRAY_BUFFER)
+      // console.log(graph_points.length)
+      // console.log(this.gl.ARRAY_BUFFER)
       gl.drawArrays(gl.LINE_STRIP, 0, graph_points.length);
 
       this.runGrid([0.8, 0.8, 0.8]);

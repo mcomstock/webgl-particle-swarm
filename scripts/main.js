@@ -233,9 +233,9 @@ require([
     error_graph.runGraph(best_error_list, [0, 0, 0], best_error_list.length, [errmin, errmax]);
     pso_interface.setErrorAxes(1, best_error_list.length, errmin, errmax);
 
-    displayGraph(pso_interface.plotting_idx);
+    await displayGraph(pso_interface.plotting_idx);
 
-    console.log(`Execution time (ms): ${Date.now()-start_time}`);
+    // console.log(`Execution time (ms): ${Date.now()-start_time}`);
   }
 
   async function displayDataGraph(cl_idx) {
@@ -268,10 +268,10 @@ require([
     return idxs;
   };
 
-  function displayGraph(cl_idx, current_values) {
+  async function displayGraph(cl_idx, current_values) {
     const simulation_data = current_values ?
-      pso.runFinalSimulationSolver(cl_idx, current_values) :
-      pso.runFinalSimulationSolver(cl_idx);
+      await pso.runFinalSimulationSolver(cl_idx, current_values) :
+      await pso.runFinalSimulationSolver(cl_idx);
 
     const sim_length = (pso.env.simulation.period[cl_idx] * pso.env.simulation.num_beats) / pso.env.simulation.sample_interval;
     const plotting_sim_data = simulation_data.slice(-sim_length);

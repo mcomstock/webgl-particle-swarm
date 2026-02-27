@@ -27,6 +27,7 @@ define('scripts/pso', [
   'text!shaders/ovvr.frag',
   'text!shaders/ortp.frag',
   'text!shaders/aliev-paniflov.frag',
+  'text!shaders/set_ics.frag',
 ], function(
   GlHelper,
   CopyShader,
@@ -56,6 +57,7 @@ define('scripts/pso', [
   OvvrShader,
   OrtpShader,
   APShader,
+  SetIcsShader,
 ) {
   'use strict';
 
@@ -86,6 +88,9 @@ define('scripts/pso', [
       canvas.height = this.particles_height;
 
       this.gl_helper = new GlHelper(canvas);
+
+      // TODO should probably come up with a better solution
+      this.prepacing = false;
     }
 
     static data_type_map = {
@@ -344,6 +349,17 @@ define('scripts/pso', [
           [20.0,  0.5,   0.5,   0.2,   0.5,   1] // max parameter bounds
         ],
         velocity_update: {},
+        ics: {
+          ms: [0.0, 1.0],
+          mms: [0.0, 1.0],
+          fhn: [0.0, 0.0],
+          fk: [0.0, 1.0, 1.0],
+          b4v: [0.0, 1.0, 1.0, 0.0],
+          bb: [0.0, 1.0, 1.0, 0.0],
+          tnnp2006: [],
+          ovvr: [],
+          ortp: [],
+        },
       };
 
       return env;
@@ -395,6 +411,13 @@ define('scripts/pso', [
 
       env.particles.particle_count = this.particles_width * this.particles_height;
       env.particles.iteration_count = hyperparams.iteration_count;
+
+      env.particles.ics = this.env.ics[model];
+
+      // Pad out the array so chunks of 4 can always be used as uniforms
+      while (env.particles.ics.length % 4 !== 0) {
+        env.particles.ics.push(0);
+      }
     }
 
     normalizeData(parsed_data, normalization_max, normalization_min) {
@@ -583,6 +606,23 @@ define('scripts/pso', [
       // Table textures
       this.table_texture = gl_helper.loadFloatTexture(this.env.tables.table_width, this.env.tables.table_height, null);
 
+      this.state_textures = [];
+      this.final_state_textures = [];
+      this.state_out_textures = [];
+      this.final_state_out_textures = [];
+      for (let i = 0; i < Math.floor(this.env.particles.ics.length/4); ++i) {
+        this.state_textures.push([]);
+        this.final_state_textures.push([]);
+        this.state_out_textures.push([]);
+        this.final_state_out_textures.push([]);
+        for (let cl = 0; cl < period.length; ++cl) {
+          this.state_textures[i].push(gl_helper.loadFloatTexture(particles_width, particles_height, null));
+          this.final_state_textures[i].push(gl_helper.loadFloatTexture(this.simulation_lengths[cl], 1, null));
+          this.state_out_textures[i].push(gl_helper.loadFloatTexture(particles_width, particles_height, null));
+          this.final_state_out_textures[i].push(gl_helper.loadFloatTexture(this.simulation_lengths[cl], 1, null));
+        }
+      }
+
       const env = this.env;
 
       env.velocity_update.istate  = new Uint32Array(tex_width*tex_height*4);
@@ -729,45 +769,36 @@ define('scripts/pso', [
         };
       };
 
-      const makeRunSimulationSolver = (final) => {
-        let model_frag;
-        switch (String(this.env.simulation.model)) {
-        case 'fk':
-          model_frag = FentonKarmaShader;
-          break;
-        case 'ms':
-          model_frag = MitchellSchaefferShader;
-          break;
-        case 'mms':
-          model_frag = ModifiedMsShader;
-          break;
-        case 'fhn':
-          model_frag = HectorFHNShader;
-          break;
-        case 'b4v':
-          model_frag = Bueno4vShader;
-          break;
-        case 'bb':
-          model_frag = BuenoBrugadaShader;
-          break;
-        case 'tnnp2006':
-          model_frag = Tnnp2006Shader;
-          break;
-        case 'ovvr':
-          model_frag = OvvrShader;
-          break;
-        case 'ortp':
-          model_frag = OrtpShader;
-          break;
-        case 'ap':
-          model_frag = APShader;
-        default:
-          console.log("How could no model be selected oh no!");
+      const makeInitStateSolver = (num, cl_idx, final) => {
+        return {
+          vert: DefaultVertexShader,
+          frag: SetIcsShader,
+          uniforms: [
+            ['ics', '4fv_a', () => [this.env.particles.ics, num*4, 4]],
+          ],
+          out: [final ? this.final_state_textures[num][cl_idx] : this.state_textures[num][cl_idx]],
+          run: this.gl_helper.runProgram,
+          dims: [final ? this.simulation_lengths[cl_idx] : this.particles_width, final ? 1 : this.particles_height],
         }
+      };
 
+      const model_shader_map = {
+        'fk': FentonKarmaShader,
+        'ms': MitchellSchaefferShader,
+        'mms': ModifiedMsShader,
+        'fhn': HectorFHNShader,
+        'b4v': Bueno4vShader,
+        'bb': BuenoBrugadaShader,
+        'tnnp2006': Tnnp2006Shader,
+        'ovvr': OvvrShader,
+        'ortp': OrtpShader,
+        'ap': APShader,
+      };
+
+      const makeRunSimulationSolver = (final) => {
         const solver = {
           vert: DefaultVertexShader,
-          frag: model_frag,
+          frag: model_shader_map[this.env.simulation.model],
           uniforms: [
             ['data_texture', 'tex', (cl_idx) => this.data_textures[cl_idx]],
             ['dt', '1f', () => this.env.simulation.dt],
@@ -779,7 +810,7 @@ define('scripts/pso', [
             ['stim_offset_2', '1f', () => this.env.stimulus.stim_offset_2],
             ['stim_t_scale', '1f', () => this.env.stimulus.stim_t_scale],
             ['num_beats', '1i', () => this.env.simulation.num_beats],
-            ['pre_beats', '1i', () => this.env.simulation.pre_beats],
+            ['prepacing', '1i', () => this.prepacing],
             ['align_thresh', '1f', (cl_idx) => this.env.simulation.align_thresh[cl_idx]],
             ['sample_interval', '1f', () => this.env.simulation.sample_interval],
             ['data_type', '1i', (cl_idx) => Pso.data_type_map[this.env.simulation.datatypes[cl_idx]]],
@@ -799,11 +830,14 @@ define('scripts/pso', [
           }
         }
 
-        if (this.env.simulation.model === 'ms') {
-          solver.uniforms.push(['h_init', '1f', () => this.env.simulation.h_init]);
-        } else {
-          solver.uniforms.push(['v_init', '1f', () => this.env.simulation.v_init]);
-          solver.uniforms.push(['w_init', '1f', () => this.env.simulation.w_init]);
+        for (let i = 0; i < this.state_textures.length; ++i) {
+          if (final) {
+            solver.uniforms.push(['state_textures_' + i, 'tex', (cl_idx) => this.final_state_textures[i][cl_idx]]);
+            solver.out.push((cl_idx) => this.final_state_out_textures[i][cl_idx]);
+          } else {
+            solver.uniforms.push(['state_textures_' + i, 'tex', (cl_idx) => this.state_textures[i][cl_idx]]);
+            solver.out.push((cl_idx) => this.state_out_textures[i][cl_idx]);
+          }
         }
 
         if (Object.keys(Pso.model_table_shader_map).includes(this.env.simulation.model)) {
@@ -938,6 +972,39 @@ define('scripts/pso', [
         shader_map['global_best_copy_' + i] = makeCopySolver('global_best_out_textures', 'global_best_textures', i, 2, 2);
       }
 
+      for (let i = 0; i < this.state_textures.length; ++i) {
+        for (let j = 0; j < this.env.simulation.period.length; ++j) {
+          shader_map['state_textures_copy_' + i + '_' + j] = {
+            vert: DefaultVertexShader,
+            frag: CopyShader,
+            uniforms: [
+              ['original', 'tex', () => this.state_out_textures[i][j]],
+            ],
+            out: [this.state_textures[i][j]],
+            run: this.gl_helper.runProgram,
+            dims: [this.particles_width, this.particles_height],
+          };
+
+          shader_map['final_state_textures_copy_' + i + '_' + j] = {
+            vert: DefaultVertexShader,
+            frag: CopyShader,
+            uniforms: [
+              ['original', 'tex', () => this.final_state_out_textures[i][j]],
+            ],
+            out: [this.final_state_textures[i][j]],
+            run: this.gl_helper.runProgram,
+            dims: [this.simulation_lengths[j], 1],
+          };
+        }
+      }
+
+      for (let i = 0; i < this.state_textures.length; ++i) {
+        for (let j = 0; j < this.env.simulation.period.length; ++j) {
+          shader_map['state_textures_init_' + i + '_' + j] = makeInitStateSolver(i, j, false);
+          shader_map['final_state_textures_init_' + i + '_' + j] = makeInitStateSolver(i, j, true);
+        }
+      }
+
       return shader_map;
     }
 
@@ -1019,14 +1086,64 @@ define('scripts/pso', [
       }
     }
 
+    async runPrepacingIterations() {
+      const program_map = this.program_map;
+      const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
+
+      this.prepacing = true;
+
+      // TODO remove
+      const a = new Float32Array(this.particles_width * this.particles_height * 4);
+
+      for (let i = 0; i < this.state_textures.length; ++i) {
+        for (let j = 0; j < this.env.simulation.period.length; ++j) {
+          program_map['state_textures_init_' + i + '_' + j]();
+          // TODO remove
+          this.gl_helper.getFloatTextureArray(this.state_textures[i][j], this.particles_width, this.particles_height, a);
+          // console.log(a);
+        }
+      }
+
+      for (let ppb = 0; ppb < this.env.simulation.pre_beats; ++ppb) {
+        for (let i = 0; i < this.env.simulation.period.length; ++i) {
+          await nextframe();
+          // The second argument disables clearing the output textures (only necessary for the
+          // blending) and the third argument disables texture blending, which is needed for the
+          // error accumulation but will not work for storing the state.
+          program_map.run_simulation(i, false, true);
+        }
+
+        for (let i = 0; i < this.state_textures.length; ++i) {
+          for (let j = 0; j < this.env.simulation.period.length; ++j) {
+            await nextframe();
+            program_map['state_textures_copy_' + i + '_' + j]();
+          }
+        }
+      }
+    }
+
     async runOneIteration() {
       const program_map = this.program_map;
       const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
 
+      // TODO remove
+      const a = new Float32Array(this.particles_width * this.particles_height * 4);
+      const b = new Float32Array(this.tex_width * this.tex_height * 4);
+
+      await this.runPrepacingIterations();
+
+      this.prepacing = false;
+
+      this.gl_helper.getFloatTextureArray(this.state_textures[0][0], this.particles_width, this.particles_height, a);
+      console.log(a);
+
       for (let i = 0; i < this.env.simulation.period.length; ++i) {
         await nextframe();
-        program_map.run_simulation(i, i === 0);
+        program_map.run_simulation(i, i === 0, false);
       }
+
+      // this.gl_helper.getFloatTextureArray(this.error_texture, this.particles_width, this.particles_height, a);
+      // console.log(a);
 
       await nextframe();
       program_map.reduce_error_1();
@@ -1111,7 +1228,40 @@ define('scripts/pso', [
       }
     }
 
-    runFinalSimulationSolver(cl_idx, values) {
+    async runFinalPrepacingIterations() {
+      const program_map = this.program_map;
+      const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
+
+      this.prepacing = true;
+
+      // TODO remove
+      const a = new Float32Array(Math.max(...this.simulation_lengths) * 4);
+
+      for (let i = 0; i < this.state_textures.length; ++i) {
+        for (let j = 0; j < this.env.simulation.period.length; ++j) {
+          program_map['final_state_textures_init_' + i + '_' + j]();
+          // TODO remove
+          this.gl_helper.getFloatTextureArray(this.final_state_textures[i][j], this.simulation_lengths[j], 1, a);
+          console.log(a);
+        }
+      }
+
+      for (let ppb = 0; ppb < this.env.simulation.pre_beats; ++ppb) {
+        for (let i = 0; i < this.env.simulation.period.length; ++i) {
+          await nextframe();
+          program_map.run_final_simulation(i, this.simulation_lengths[i]);
+        }
+
+        for (let i = 0; i < this.state_textures.length; ++i) {
+          for (let j = 0; j < this.env.simulation.period.length; ++j) {
+            await nextframe();
+            program_map['final_state_textures_copy_' + i + '_' + j]();
+          }
+        }
+      }
+    }
+
+    async runFinalSimulationSolver(cl_idx, values) {
       const simsize = this.simulation_lengths[cl_idx];
       const texsize = simsize*4;
 
@@ -1122,10 +1272,15 @@ define('scripts/pso', [
       }
 
       this.setFinalPosition(simsize, parameter_values);
+
+      await this.runFinalPrepacingIterations();
+      this.prepacing = false;
       this.program_map.run_final_simulation(cl_idx, simsize);
 
       const texture_array = new Float32Array(texsize);
       this.gl_helper.getFloatTextureArray(this.simulation_texture, simsize, 1, texture_array);
+
+      console.log(texture_array);
 
       const simulation_data = new Float32Array(simsize);
       for (let i = 0; i < simsize; ++i) {
