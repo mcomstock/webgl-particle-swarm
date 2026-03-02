@@ -74,59 +74,7 @@ require([
   };
 
   pso_interface.save_run_button.onclick = () => {
-    const details_obj = {
-      'simulation': (({
-        model,
-        dt,
-        period,
-        num_beats,
-        pre_beats,
-        datatypes,
-        weights,
-        sample_interval,
-        normalize,
-        normalization_max,
-        normalization_min,
-        normalized_align_threshold,
-        normalized_ca_align_threshold,
-        err_type,
-      }) => ({
-        model,
-        dt,
-        period,
-        num_beats,
-        pre_beats,
-        datatypes,
-        weights,
-        sample_interval,
-        normalize,
-        normalization_max,
-        normalization_min,
-        normalized_align_threshold,
-        normalized_ca_align_threshold,
-        err_type,
-      }))(pso.env.simulation),
-      'stimulus': structuredClone(pso.env.stimulus),
-      'particles': structuredClone(pso.env.particles),
-    };
-
-    const params = PsoInterface.param_lists[pso.env.simulation.model];
-
-    const params_obj = {};
-    const lower_bounds_obj = {};
-    const upper_bounds_obj = {};
-
-    for (let i = 0; i < params.length; ++i) {
-      const param = params[i];
-      params_obj[param] = pso.env.particles.global_bests[i];
-      lower_bounds_obj[param] = pso.env.particles.lower_bounds[i];
-      upper_bounds_obj[param] = pso.env.particles.upper_bounds[i];
-    }
-
-    details_obj.particles.global_bests = params_obj;
-    details_obj.particles.lower_bounds = lower_bounds_obj;
-    details_obj.particles.upper_bounds = upper_bounds_obj;
-
+    const details_obj = getRunDetails();
     save_output([JSON.stringify(details_obj, null, 2)], `pso_run_${Date.now()}.json`);
   };
 
@@ -176,6 +124,89 @@ require([
     runPsoIterations(hyperparams.iteration_count);
   };
 
+  
+  const run_scripted_pso = async () => {
+    // Create a PSO object for each PSO run in the config file
+    const script_config = await pso_interface.getScriptConfig();
+    const pso_list = await createScriptedPsoList(script_config);
+    const input_data = await pso_interface.getAllInputData();
+    
+    // Run each PSO object
+    const script_results_obj = []
+    for (const curr_pso of pso_list) {
+      pso = curr_pso;
+      pso.readData(input_data);
+      pso.initializeTextures();
+      pso.setupAllSolvers();
+      await pso.initializeTables();
+      await runPsoIterations(pso.env.particles.iteration_count);
+      script_results_obj.push(getRunDetails());
+    }
+
+    save_output([JSON.stringify(script_results_obj, null, 2)], `script_run_${Date.now()}.json`);
+  };
+
+  const createScriptedPsoList = async (script_config) => {
+    // Creates a PSO object for each run specified in the script config file
+    const pso_list = [];
+    for (const curr_config of script_config) {
+      // Update any scripted PSO environment parameters
+      const model = getEnvValue("model", pso_interface.model_select.value, curr_config);
+      const pre_beats = getEnvValue("pre_beats", pso_interface.data_pre_beats.value, curr_config);
+      const num_beats = getEnvValue("num_beats", pso_interface.data_num_beats.value, curr_config);
+      const sample_interval = getEnvValue("sample_interval", pso_interface.data_sample_interval.value, curr_config);
+      const normalize = getEnvValue("normalize", pso_interface.normalize.checked, curr_config);
+      const normalization_max = getEnvValue("normalization_max", Number(pso_interface.normalization_max.value), curr_config);
+      const normalization_min = getEnvValue("normalization_min", Number(pso_interface.normalization_min.value), curr_config);
+      const stimulus_params = getEnvValue("stimulus_params", await pso_interface.getStimulusParameters(), curr_config);
+      const bounds = Pso.getEnv()[model + "_bounds"]; // Start with default bounds for selected model
+      for (const [i, update] of [curr_config.particles.lower_bounds, curr_config.particles.upper_bounds].entries()) {
+        if (update != null) {
+          bounds[i] = Object.values(update);
+        }
+      }
+      const hyperparams = await pso_interface.getHyperparams();
+      for (const key in hyperparams) {
+        hyperparams[key] = getEnvValue(key, hyperparams[key], curr_config);
+      }
+
+      // Init PSO object
+      const curr_pso = new Pso(hyperparams.particle_count);
+      curr_pso.setupEnv(model, bounds, stimulus_params, pre_beats, num_beats, sample_interval, normalize, normalization_max, normalization_min, hyperparams)
+
+      // Add to list (possibly several times)
+      const n = (curr_config.num_repeats != null) ? Math.max(1, curr_config.num_repeats) : 1;
+      for (let i = 0; i < n; i++) {
+        pso_list.push(curr_pso)
+      }
+    }
+      
+    return pso_list;
+  }
+
+  function getEnvValue(key, default_value, obj) {
+    // Helper function that returns either the default PSO env parameter or the update from the config object if it exists
+    const config_map = {
+      "model": "simulation.model",
+      "lower_bounds": "particles.lower_bounds",
+      "upper_bounds": "particles.upper_bounds",
+      "stimulus_params": "stimulus",
+      "pre_beats" : "simulation.pre_beats",
+      "num_beats" : "simulation.num_beats",
+      "sample_interval" : "simulation.sample_interval",
+      "normalize" : "simulation.normalize",
+      "normalization_max" : "simulation.normalization_max",
+      "normalization_min" : "simulation.normalization_min",
+      "phi1": "particles.phi_local",
+      "phi2": "particles.phi_global",
+      "particle_count": "particles.particle_count",
+      "iteration_count": "particles.iteration_count",
+      "chi": "particles.chi"
+    }
+    const update_value = config_map[key].split('.').reduce((curr, key) => curr?.[key], obj);
+    return (update_value == null) ? default_value : update_value
+  };
+
   async function runPsoIterations(iteration_count) {
     const start_time = Date.now();
     const best_error_list = [];
@@ -208,7 +239,7 @@ require([
 
     pso_interface.updateStatusDisplay(iteration_count, iteration_count);
 
-    finalizePso(start_time, best_error_list);
+    // finalizePso(start_time, best_error_list);
 
     if (save_error) {
       const filename = `pso_error_${pso.env.simulation.model}_${pso.particles_width*pso.particles_height}_${iteration_count}_${Date.now()}.txt`;
@@ -311,5 +342,64 @@ require([
     pso_interface.setAxes(0, sim_length * interval, scale[0], scale[1]);
   }
 
-  document.querySelector('button#PSO_button').onclick = () => run_pso();
+  document.querySelector('button#PSO_button').onclick = () => run_scripted_pso();
+
+  function getRunDetails() {
+    const details_obj = {
+      'simulation': (({
+        model,
+        dt,
+        period,
+        num_beats,
+        pre_beats,
+        datatypes,
+        weights,
+        sample_interval,
+        normalize,
+        normalization_max,
+        normalization_min,
+        normalized_align_threshold,
+        normalized_ca_align_threshold,
+        err_type,
+      }) => ({
+        model,
+        dt,
+        period,
+        num_beats,
+        pre_beats,
+        datatypes,
+        weights,
+        sample_interval,
+        normalize,
+        normalization_max,
+        normalization_min,
+        normalized_align_threshold,
+        normalized_ca_align_threshold,
+        err_type,
+      }))(pso.env.simulation),
+      'stimulus': structuredClone(pso.env.stimulus),
+      'particles': structuredClone(pso.env.particles),
+    };
+
+    const params = PsoInterface.param_lists[pso.env.simulation.model];
+
+    const params_obj = {};
+    const lower_bounds_obj = {};
+    const upper_bounds_obj = {};
+
+    for (let i = 0; i < params.length; ++i) {
+      const param = params[i];
+      params_obj[param] = pso.env.particles.global_bests[i];
+      lower_bounds_obj[param] = pso.env.particles.lower_bounds[i];
+      upper_bounds_obj[param] = pso.env.particles.upper_bounds[i];
+    }
+
+    details_obj.particles.global_bests = params_obj;
+    details_obj.particles.lower_bounds = lower_bounds_obj;
+    details_obj.particles.upper_bounds = upper_bounds_obj;
+
+    return details_obj;
+  }
+
+  
 });

@@ -540,5 +540,12 @@ define('scripts/interface', [
 
       return hyperparams;
     }
+
+    async getScriptConfig() {
+      // Will update this to a user upload
+      const response = await fetch('./test_config.json');
+      if (!response.ok) return null;
+      return response.json();
+    }
   };
 });
