@@ -457,20 +457,20 @@ define('scripts/pso', [
           const data_min = Math.min(...full_normalized_data);
           const actual_align_thresh = data_min + nthresh * (data_max-data_min);
           const first_compare_index = full_normalized_data.findIndex(number => number > actual_align_thresh);
-
-          const left_trimmed_data = full_normalized_data.slice(first_compare_index);
+          const last_compare_index = this.env.simulation.num_beats * input_cls[i];
+          const curr_trimmed_data = full_normalized_data.slice(first_compare_index, last_compare_index);
 
           // Pad out the extra pixel values. The data could be stored more densely by using the full pixel
           // value and by using a two-dimensional texture, but for now there is not enough to require that.
-          const data_length = left_trimmed_data.length;
+          const data_length = curr_trimmed_data.length;
           const data_array = new Float32Array(4 * data_length);
           for (let j = 0; j < data_length; ++j) {
-            data_array[4*j] = left_trimmed_data[j];
+            data_array[4*j] = curr_trimmed_data[j];
           }
 
-          trimmed_data.push(left_trimmed_data);
+          trimmed_data.push(curr_trimmed_data);
           data_arrays.push(data_array);
-          align_thresh.push(left_trimmed_data[0] - delta);
+          align_thresh.push(curr_trimmed_data[0] - delta);
           all_full_normalized_data.push(full_normalized_data);
         }
       }
