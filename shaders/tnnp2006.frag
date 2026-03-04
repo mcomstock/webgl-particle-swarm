@@ -158,67 +158,45 @@ void main() {
     float Kibase, Kidiff;
     float Naibase, Naidiff;
 
-    Kibase = 136.0;
-    Naibase = 9.413;
-#if defined EPI
-    V = -85.46;
-    Rhat = 0.9891;
-    // Nai = 9.293;
-    Naidiff = 9.293 - Naibase;
-    // Ki = 136.2;
-    Kidiff = 0.2;
-    Cai = 0.0001156;
-    CaSS = 0.002331;
-    CaSR = 3.432;
-    m = 0.001633;
-    h = 0.7512;
-    j = 0.7508;
-    xs = 0.003214;
-    d = 3.72e-5;
-    f = 0.9767;
-    f2 = 0.9995;
-    fcass = 1.0;
-#elif defined MYO
-    V = -84.53;
-    Rhat = 0.9874;
-    // Nai = 9.322;
-    Naidiff = 9.322 - Naibase;
-    // Ki = 136.0;
+    // Initialize values for the simulation
+    ivec2 state_size = textureSize(state_textures_0, 0);
+    ivec2 state_idx = ivec2(floor(cc * vec2(state_size)));
+
+    vec4 state_0 = texelFetch(state_textures_0, state_idx, 0);
+    vec4 state_1 = texelFetch(state_textures_1, state_idx, 0);
+    vec4 state_2 = texelFetch(state_textures_2, state_idx, 0);
+    vec4 state_3 = texelFetch(state_textures_3, state_idx, 0);
+    vec4 state_4 = texelFetch(state_textures_4, state_idx, 0);
+
+    V = state_0[0];
+    Rhat = state_0[1];
+    Nai = state_0[2];
+    Ki = state_0[3];
+
+    Cai = state_1[0];
+    CaSS = state_1[1];
+    CaSR = state_1[2];
+    m = state_1[3];
+
+    h = state_2[0];
+    j = state_2[1];
+    xs = state_2[2];
+    d = state_2[3];
+
+    f = state_3[0];
+    f2 = state_3[1];
+    fcass = state_3[2];
+    r = state_3[3];
+
+    s = state_4[0];
+    xr1 = state_4[1];
+    xr2 = state_4[2];
+
+    Naibase = Nai;
+    Naidiff = 0.0;
+
+    Kibase = Ki;
     Kidiff = 0.0;
-    Cai = 0.0001156;
-    CaSS = 0.002331;
-    CaSR = 4.130;
-    m = 0.001694;
-    h = 0.7466;
-    j = 0.7457;
-    xs = 0.003343;
-    d = 3.345-5;
-    f = 0.9595;
-    f2 = 0.9995;
-    fcass = 1.0;
-#else
-    V = -84.70;
-    Rhat = 0.9891;
-    // Nai = 9.413;
-    Naidiff = 9.413 - Naibase;
-    // Ki = 136.1;
-    Kidiff = 0.1;
-    Cai = 0.0001021;
-    CaSS = 0.002111;
-    CaSR = 3.385;
-    m = 0.001634;
-    h = 0.7512;
-    j = 0.7508;
-    xs = 0.003213;
-    d = 3.27e-5;
-    f = 0.9771;
-    f2 = 0.9995;
-    fcass = 1.0;
-#endif
-    r = 0.0;
-    s = 0.0;
-    xr1 = 0.0;
-    xr2 = 0.0;
 
     float compare_stride = round(sample_interval / dt);
 
@@ -434,7 +412,7 @@ void main() {
         V = V - dt * (INa + IK1 + Ito + IKr + IKs + ICaL + INaCa + INaK + IpCa + IpK + IbCa + IbNa + Istim);
         u = save_ca * Cai + save_v * V;
 
-        if (step_count > pre_pace_steps) {
+        if (!prepacing) {
             // APD only mode
             if (data_type == 1) {
                 if (!activated && u > apd_thresh) {
@@ -481,7 +459,7 @@ void main() {
         }
 
         // Save time series data for plotting
-        if (float((step_count - pre_pace_steps) - 1) / float((num_steps - pre_pace_steps) - 1) <= cc.x) {
+        if (float(step_count - 1) / float(num_steps - 1) <= cc.x) {
             saved_value = u;
         }
     }
@@ -519,4 +497,10 @@ void main() {
     }
 
     error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
+
+    state_out_texture_0 = vec4(V, Rhat, Nai, Ki);
+    state_out_texture_1 = vec4(Cai, CaSS, CaSR, m);
+    state_out_texture_2 = vec4(h, j, xs, d);
+    state_out_texture_3 = vec4(f, f2, fcass, r);
+    state_out_texture_4 = vec4(s, xr1, xr2, 0.0);
 }

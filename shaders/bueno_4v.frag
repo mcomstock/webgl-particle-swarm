@@ -18,6 +18,7 @@ uniform int num_beats, data_type, err_type;
 uniform float align_thresh;
 uniform float sample_interval, apd_thresh, weight;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
+uniform bool prepacing;
 uniform bool stim_biphasic;
 
 #define thwinf thw

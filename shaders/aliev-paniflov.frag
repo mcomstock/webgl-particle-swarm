@@ -5,18 +5,20 @@ precision highp int;
 
 uniform sampler2D in_particles_1;
 uniform sampler2D data_texture;
+uniform sampler2D state_textures_0;
 
 layout (location = 0) out vec4 error_texture;
+layout (location = 1) out vec4 state_out_texture_0;
 
 in vec2 cc;
 
 // Simulation parameters
 uniform float dt, period;
-uniform int num_beats, pre_beats, data_type, err_type;
-uniform float h_init;
+uniform int num_beats, data_type, err_type;
 uniform float align_thresh;
 uniform float sample_interval, apd_thresh, weight;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
+uniform bool prepacing;
 uniform bool stim_biphasic;
 
 float biphasic_stim_f(const float t) {
@@ -32,10 +34,8 @@ float square_stim_f(const float t) {
 void main() {
     // PSO derived parameters
     int num_period = int(ceil(period/dt));
-    int total_beats = pre_beats + num_beats;
+    int total_beats = prepacing ? 1 : num_beats;
     float endtime = ceil(float(total_beats)*period);
-    float pre_pace_endtime = ceil(float(pre_beats)*period);
-    int pre_pace_steps = int(ceil(pre_pace_endtime/dt));
     int num_steps = int(ceil(endtime/dt));
 
     ivec2 tex_size = textureSize(in_particles_1, 0);
@@ -56,8 +56,13 @@ void main() {
     float mu1 = particles_2.r;
     float mu2 = particles_2.g;
 
-    float u = 0.0;
-    float v = 0.0;
+    // Initialize values for the simulation
+    ivec2 state_size = textureSize(state_textures_0, 0);
+    ivec2 state_idx = ivec2(floor(cc * vec2(state_size)));
+
+    vec4 state_0 = texelFetch(state_textures_0, state_idx, 0);
+    float u = state_0[0];
+    float v = state_0[1];
 
     float du, dv;
 
@@ -98,7 +103,7 @@ void main() {
         u = u + dt*du;
         v = v + dt*dv;
 
-        if (step_count > pre_pace_steps) {
+        if (!prepacing) {
             //APD only mode
             if (data_type == 1) {
                 if (!activated && u > apd_thresh) {
@@ -144,7 +149,7 @@ void main() {
             }
         }
 
-        if (float((step_count - pre_pace_steps) - 1) / float((num_steps - pre_pace_steps) - 1) <= cc.x) {
+        if (float(step_count - 1) / float(num_steps - 1) <= cc.x) {
             saved_value = u;
         }
     }
@@ -182,4 +187,5 @@ void main() {
     }
 
     error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
+    state_out_texture_0 = vec4(u, v, 0.0, 0.0);
 }

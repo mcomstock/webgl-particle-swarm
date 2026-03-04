@@ -344,7 +344,7 @@ define('scripts/pso', [
           [  29.676, 0.04, 0.0002,  2.5e-7,  7.148e-8, 0.00022, 2.75e-7,  7.8628e-8, 0.092, 0.0068, 0.3816, 0.0016, 60.0, 7.5e-10,   5.0e-8,  0.006,  0.001],
         ],
         ap_bounds: [
-          // k    a      b      eps0     mu1    mu2 
+          // k    a      b      eps0     mu1    mu2
           [1.0,   0.01, 0.08, 0.0005,   0.05,   0.05], // min parameter bounds
           [20.0,  0.5,   0.5,   0.2,   0.5,   1] // max parameter bounds
         ],
@@ -353,10 +353,11 @@ define('scripts/pso', [
           ms: [0.0, 1.0],
           mms: [0.0, 1.0],
           fhn: [0.0, 0.0],
+          ap: [0.0, 0.0],
           fk: [0.0, 1.0, 1.0],
           b4v: [0.0, 1.0, 1.0, 0.0],
           bb: [0.0, 1.0, 1.0, 0.0],
-          tnnp2006: [],
+          tnnp2006: [-84.7, 0.9891, 9.413, 136.1, 0.0001021, 0.002111, 3.385, 0.001634, 0.7512, 0.7508, 0.003213, 3.27e-5, 0.9771, 0.9995, 1.0, 0.0, 0.0, 0.0, 0.0],
           ovvr: [],
           ortp: [],
         },
@@ -612,14 +613,17 @@ define('scripts/pso', [
       this.final_state_out_textures = [];
       for (let i = 0; i < Math.floor(this.env.particles.ics.length/4); ++i) {
         this.state_textures.push([]);
-        this.final_state_textures.push([]);
         this.state_out_textures.push([]);
+
+        this.final_state_textures.push([]);
         this.final_state_out_textures.push([]);
+
         for (let cl = 0; cl < period.length; ++cl) {
           this.state_textures[i].push(gl_helper.loadFloatTexture(particles_width, particles_height, null));
-          this.final_state_textures[i].push(gl_helper.loadFloatTexture(this.simulation_lengths[cl], 1, null));
           this.state_out_textures[i].push(gl_helper.loadFloatTexture(particles_width, particles_height, null));
-          this.final_state_out_textures[i].push(gl_helper.loadFloatTexture(this.simulation_lengths[cl], 1, null));
+
+          this.final_state_textures[i].push(gl_helper.loadFloatTexture(Math.max(...this.simulation_lengths), 1, null));
+          this.final_state_out_textures[i].push(gl_helper.loadFloatTexture(Math.max(...this.simulation_lengths), 1, null));
         }
       }
 
@@ -778,7 +782,7 @@ define('scripts/pso', [
           ],
           out: [final ? this.final_state_textures[num][cl_idx] : this.state_textures[num][cl_idx]],
           run: this.gl_helper.runProgram,
-          dims: [final ? this.simulation_lengths[cl_idx] : this.particles_width, final ? 1 : this.particles_height],
+          dims: [final ? Math.max(...this.simulation_lengths) : this.particles_width, final ? 1 : this.particles_height],
         }
       };
 
@@ -993,7 +997,7 @@ define('scripts/pso', [
             ],
             out: [this.final_state_textures[i][j]],
             run: this.gl_helper.runProgram,
-            dims: [this.simulation_lengths[j], 1],
+            dims: [Math.max(...this.simulation_lengths), 1],
           };
         }
       }
@@ -1241,7 +1245,7 @@ define('scripts/pso', [
         for (let j = 0; j < this.env.simulation.period.length; ++j) {
           program_map['final_state_textures_init_' + i + '_' + j]();
           // TODO remove
-          this.gl_helper.getFloatTextureArray(this.final_state_textures[i][j], this.simulation_lengths[j], 1, a);
+          this.gl_helper.getFloatTextureArray(this.final_state_textures[i][j], Math.max(...this.simulation_lengths), 1, a);
           console.log(a);
         }
       }
@@ -1249,8 +1253,17 @@ define('scripts/pso', [
       for (let ppb = 0; ppb < this.env.simulation.pre_beats; ++ppb) {
         for (let i = 0; i < this.env.simulation.period.length; ++i) {
           await nextframe();
-          program_map.run_final_simulation(i, this.simulation_lengths[i]);
+          program_map.run_final_simulation(i, Math.max(...this.simulation_lengths));
         }
+
+        for (let i = 0; i < this.state_textures.length; ++i) {
+          for (let j = 0; j < this.env.simulation.period.length; ++j) {
+            this.gl_helper.getFloatTextureArray(this.final_state_out_textures[i][j], Math.max(...this.simulation_lengths), 1, a);
+            console.log(a);
+          }
+        }
+
+        console.log('hi');
 
         for (let i = 0; i < this.state_textures.length; ++i) {
           for (let j = 0; j < this.env.simulation.period.length; ++j) {
@@ -1258,6 +1271,8 @@ define('scripts/pso', [
             program_map['final_state_textures_copy_' + i + '_' + j]();
           }
         }
+
+        console.log('hi 2');
       }
     }
 
