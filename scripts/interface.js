@@ -166,6 +166,18 @@ define('scripts/interface', [
       this.error_xmax = document.getElementById('error_xmax');
       this.error_ymin = document.getElementById('error_ymin');
       this.error_ymax = document.getElementById('error_ymax');
+
+      this.script_active = document.getElementById('script-active');
+    }
+
+    updateScriptActive() {
+      if (this.script_active.checked) {
+        document.getElementById('PSO_button').textContent = "Run scripted PSO";
+        document.getElementById('save_run_button').textContent = "Save scripted run details"
+      } else {
+        document.getElementById('PSO_button').textContent = "Run";
+        document.getElementById('save_run_button').textContent = "Save run details"
+      }
     }
 
     setDefaultNormalization() {
@@ -186,12 +198,17 @@ define('scripts/interface', [
       }
     }
 
-    updateStatusDisplay(current, total) {
+    updateRunCountStatus(current, total) {
+      const str = `Scripted Run: ${current}/${total},   `;
+      this.status_display.children[0].innerHTML = str;
+    }
+
+    updateIterationsStatus(current, total) {
       let str = `Iteration: ${current}/${total}`;
       if (current === total) {
         str += ' Done!';
       }
-      this.status_display.innerHTML = str;
+      this.status_display.children[1].innerHTML = str;
     }
 
     displayStimulusParameters() {
@@ -542,10 +559,13 @@ define('scripts/interface', [
     }
 
     async getScriptConfig() {
-      // Will update this to a user upload
-      const response = await fetch('./test_config.json');
-      if (!response.ok) return null;
-      return response.json();
+      const file = document.querySelector("#script-input").files[0];
+      try {
+        const text = await file.text();
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error("Invalid script file");
+      } 
     }
   };
 });

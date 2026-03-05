@@ -12,7 +12,10 @@
       <button type="button" id="PSO_button">Run</button>
       <button type="button" id="save_params_button">Save parameters</button>
       <button type="button" id="save_run_button">Save run details</button>
-      <span id="status_display"></span>
+      <span id="status_display">
+        <span></span>
+        <span></span>
+      </span>
     </div>
 
     <div class="flex-container">
@@ -1060,6 +1063,13 @@
     <div id="data-section"></div>
     <button id="add-data">Add data</button>
     <button id="remove-data">Remove data</button>
+
+    <div id="script-section">
+      <label for="script-input">Add script</label>
+      <input id="script-input" type="file">
+      <label for="script-active">Run with script?</label>
+      <input id="script-active" type="checkbox">
+    </div>
 
     <div id="stim-section" class="data_div">
       <input id="stim-biphasic" type="checkbox">

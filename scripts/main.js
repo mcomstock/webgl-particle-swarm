@@ -13,6 +13,7 @@ require([
   const error_canvas = document.getElementById('error_canvas');
 
   let pso;
+  let run_details; // Global variable for storing most recent run/scripted run output
   const graph = new Graph(graph_canvas);
   const error_graph = new Graph(error_canvas);
   const pso_interface = new PsoInterface();
@@ -34,6 +35,7 @@ require([
   pso_interface.fit_all_button.onclick = () => pso_interface.setFitCheckboxes(true);
   pso_interface.fit_none_button.onclick = () => pso_interface.setFitCheckboxes(false);
   pso_interface.normalize.onclick = () => pso_interface.updateNormalizationDisplay();
+  pso_interface.script_active.onclick = () => pso_interface.updateScriptActive();
   pso_interface.plot_from_vals_button.onclick = () => {
     if (!pso) {
       alert('A fit must be created before modifying the parameters');
@@ -74,8 +76,8 @@ require([
   };
 
   pso_interface.save_run_button.onclick = () => {
-    const details_obj = getRunDetails();
-    save_output([JSON.stringify(details_obj, null, 2)], `pso_run_${Date.now()}.json`);
+    const run_type = (pso.scripted) ? "scripted_run" : "run";
+    save_output([JSON.stringify(run_details, null, 2)], `pso_${run_type}_${Date.now()}.json`);
   };
 
   pso_interface.data_section.onclick = async (e) => {
@@ -121,7 +123,10 @@ require([
     pso.setupAllSolvers();
     await pso.initializeTables();
 
+    pso_interface.status_display.children[0].innerHTML = ""; // Clear run count if a scripted run previously activated it
+
     runPsoIterations(hyperparams.iteration_count);
+    run_details = getRunDetails();
   };
 
   
@@ -132,18 +137,20 @@ require([
     const input_data = await pso_interface.getAllInputData();
     
     // Run each PSO object
-    const script_results_obj = []
-    for (const curr_pso of pso_list) {
+    const script_results = []
+    for (const [i, curr_pso] of pso_list.entries()) {
+      pso_interface.updateRunCountStatus(i+1, pso_list.length);
       pso = curr_pso;
+      pso_interface.model_select.value = pso.env.simulation.model;
       pso.readData(input_data);
       pso.initializeTextures();
       pso.setupAllSolvers();
       await pso.initializeTables();
       await runPsoIterations(pso.env.particles.iteration_count);
-      script_results_obj.push(getRunDetails());
+      script_results.push(getRunDetails());
+      pso_interface.displayModelParameters(pso.env.simulation.model);
     }
-
-    save_output([JSON.stringify(script_results_obj, null, 2)], `script_run_${Date.now()}.json`);
+    run_details = script_results;
   };
 
   const createScriptedPsoList = async (script_config) => {
@@ -173,8 +180,9 @@ require([
       // Init PSO object
       const curr_pso = new Pso(hyperparams.particle_count);
       curr_pso.setupEnv(model, bounds, stimulus_params, pre_beats, num_beats, sample_interval, normalize, normalization_max, normalization_min, hyperparams)
+      curr_pso.scripted = true;
 
-      // Add to list (possibly several times)
+      // Add to list N times
       const n = (curr_config.num_repeats != null) ? Math.max(1, curr_config.num_repeats) : 1;
       for (let i = 0; i < n; i++) {
         pso_list.push(curr_pso)
@@ -218,7 +226,7 @@ require([
     const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
 
     for (let iter = 0; iter < iteration_count; ++iter) {
-      pso_interface.updateStatusDisplay(iter, iteration_count);
+      pso_interface.updateIterationsStatus(iter+1, iteration_count);
       await pso.runOneIteration();
 
       if (dump_convergence) {
@@ -237,9 +245,7 @@ require([
       pso_interface.setErrorAxes(1, iteration_count, errmin, errmax);
     }
 
-    pso_interface.updateStatusDisplay(iteration_count, iteration_count);
-
-    // finalizePso(start_time, best_error_list);
+    finalizePso(start_time, best_error_list);
 
     if (save_error) {
       const filename = `pso_error_${pso.env.simulation.model}_${pso.particles_width*pso.particles_height}_${iteration_count}_${Date.now()}.txt`;
@@ -342,7 +348,14 @@ require([
     pso_interface.setAxes(0, sim_length * interval, scale[0], scale[1]);
   }
 
-  document.querySelector('button#PSO_button').onclick = () => run_scripted_pso();
+  document.querySelector('button#PSO_button').onclick = () => {
+    if (pso_interface.script_active.checked) {
+      run_scripted_pso();
+    } else {
+      run_pso();
+    }
+  }
+
 
   function getRunDetails() {
     const details_obj = {
@@ -400,6 +413,5 @@ require([
 
     return details_obj;
   }
-
   
 });

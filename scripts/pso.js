@@ -86,6 +86,7 @@ define('scripts/pso', [
       canvas.height = this.particles_height;
 
       this.gl_helper = new GlHelper(canvas);
+      this.scripted = false;
     }
 
     static data_type_map = {
