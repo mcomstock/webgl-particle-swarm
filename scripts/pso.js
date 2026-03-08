@@ -1101,6 +1101,7 @@ define('scripts/pso', [
 
       for (let i = 0; i < this.state_textures.length; ++i) {
         for (let j = 0; j < this.env.simulation.period.length; ++j) {
+          await nextframe();
           program_map['state_textures_init_' + i + '_' + j]();
           // TODO remove
           this.gl_helper.getFloatTextureArray(this.state_textures[i][j], this.particles_width, this.particles_height, a);
@@ -1243,6 +1244,7 @@ define('scripts/pso', [
 
       for (let i = 0; i < this.state_textures.length; ++i) {
         for (let j = 0; j < this.env.simulation.period.length; ++j) {
+          await nextframe();
           program_map['final_state_textures_init_' + i + '_' + j]();
           // TODO remove
           this.gl_helper.getFloatTextureArray(this.final_state_textures[i][j], Math.max(...this.simulation_lengths), 1, a);
