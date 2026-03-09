@@ -4,16 +4,29 @@ precision highp float;
 precision highp int;
 
 uniform sampler2D in_particles_1, in_particles_2, data_texture;
+uniform sampler2D state_textures_0, state_textures_1, state_textures_2, state_textures_3, state_textures_4, state_textures_5, state_textures_6, state_textures_7, state_textures_8, state_textures_9, state_textures_10;
 
 layout (location = 0) out vec4 error_texture;
+layout (location = 1) out vec4 state_out_texture_0;
+layout (location = 2) out vec4 state_out_texture_1;
+layout (location = 3) out vec4 state_out_texture_2;
+layout (location = 4) out vec4 state_out_texture_3;
+layout (location = 5) out vec4 state_out_texture_4;
+layout (location = 6) out vec4 state_out_texture_5;
+layout (location = 7) out vec4 state_out_texture_6;
+layout (location = 8) out vec4 state_out_texture_7;
+layout (location = 9) out vec4 state_out_texture_8;
+layout (location = 10) out vec4 state_out_texture_9;
+layout (location = 11) out vec4 state_out_texture_10;
 
 in vec2 cc;
 
 uniform float dt, period;
-uniform int num_beats, pre_beats, data_type, err_type;
+uniform int num_beats, data_type, err_type;
 uniform float align_thresh;
 uniform float sample_interval, apd_thresh, weight;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
+uniform bool prepacing;
 uniform bool stim_biphasic;
 
 uniform sampler2D table;
@@ -214,10 +227,8 @@ float square_stim_f(const float t) {
 
 void main() {
     int num_period = int(ceil(period/dt));
-    int total_beats = pre_beats + num_beats;
+    int total_beats = prepacing ? 1 : num_beats;
     float endtime = ceil(float(total_beats)*period);
-    float pre_pace_endtime = ceil(float(pre_beats)*period);
-    int pre_pace_steps = int(ceil(pre_pace_endtime/dt));
     int num_steps = int(ceil(endtime/dt));
 
     ivec2 tex_size = textureSize(in_particles_1, 0);
@@ -316,56 +327,82 @@ void main() {
     float Na_i_base, Na_i_diff;
     float Na_ss_base, Na_ss_diff;
 
-    Na_i_base = 7.23;
-    Na_i_diff = 0.0;
-    Na_ss_base = 7.23;
-    Na_ss_diff = 0.0;
-    K_i_base = 143.79;
-    K_i_diff = 0.0;
-    K_ss_base = 143.79;
-    K_ss_diff = 0.0;
+    // Initialize values for the simulation
+    ivec2 state_size = textureSize(state_textures_0, 0);
+    ivec2 state_idx = ivec2(floor(cc * vec2(state_size)));
 
-    V = -87.84;
-    // Na_i = 7.23;
-    // Na_ss = 7.23;
-    // K_i = 143.79;
-    // K_ss = 143.79;
-    Ca_i = 8.54e-5;
-    Ca_ss = 8.43e-5;
-    Ca_nsr = 1.61;
-    Ca_jsr = 1.56;
-    m = 0.0074621;
-    hfast = 0.692591;
-    hslow = 0.692574;
-    j = 0.692477;
-    hCaMKslow = 0.448501;
-    jCaMK = 0.692413;
-    mL = 0.000194015;
-    hL = 0.496116;
-    hLCaMK = 0.265885;
-    a = 0.00101185;
-    ifast = 0.999542;
-    islow = 0.589579;
-    aCaMK = 0.000515567;
-    iCaMKfast = 0.999542;
-    iCaMKslow = 0.641861;
-    d = 2.43015e-9;
-    ffast = 1.0;
-    fslow = 0.910671;
-    fCafast = 1.0;
-    fCaslow = 0.99982;
-    jCa = 0.999977;
-    n = 0.00267171;
-    fCaMKfast = 1.0;
-    fCaCaMKfast = 1.0;
-    xrfast = 8.26608e-6;
-    xrslow = 0.453268;
-    xs1 = 0.270492;
-    xs2 = 0.0001963;
-    xK1 = 0.996801;
-    JrelNP = 2.53943e-5;
-    JrelCaMK = 3.17262e-7;
-    CaMKtrap = 0.0124065;
+    vec4 state_0 = texelFetch(state_textures_0, state_idx, 0);
+    vec4 state_1 = texelFetch(state_textures_1, state_idx, 1);
+    vec4 state_2 = texelFetch(state_textures_2, state_idx, 2);
+    vec4 state_3 = texelFetch(state_textures_3, state_idx, 3);
+    vec4 state_4 = texelFetch(state_textures_4, state_idx, 4);
+    vec4 state_5 = texelFetch(state_textures_4, state_idx, 5);
+    vec4 state_6 = texelFetch(state_textures_4, state_idx, 6);
+    vec4 state_7 = texelFetch(state_textures_4, state_idx, 7);
+    vec4 state_8 = texelFetch(state_textures_4, state_idx, 8);
+    vec4 state_9 = texelFetch(state_textures_4, state_idx, 9);
+    vec4 state_10 = texelFetch(state_textures_4, state_idx, 10);
+
+    V = state_0[0];
+    Na_i = state_0[1];
+    Na_ss = state_0[2];
+    K_i = state_0[3];
+
+    K_ss = state_1[0];
+    Ca_i = state_1[1];
+    Ca_ss = state_1[2];
+    Ca_nsr = state_1[3];
+
+    Ca_jsr = state_2[0];
+    m = state_2[1];
+    hfast = state_2[2];
+    hslow = state_2[3];
+
+    j = state_3[0];
+    hCaMKslow = state_3[1];
+    jCaMK = state_3[2];
+    mL = state_3[3];
+
+    hL = state_4[0];
+    hLCaMK = state_4[1];
+    a = state_4[2];
+    ifast = state_4[3];
+
+    islow = state_5[0];
+    aCaMK = state_5[1];
+    iCaMKfast = state_5[2];
+    iCaMKslow = state_5[3];
+
+    d = state_6[0];
+    ffast = state_6[1];
+    fslow = state_6[2];
+    fCafast = state_6[3];
+
+    fCaslow = state_7[0];
+    jCa = state_7[1];
+    n = state_7[2];
+    fCaMKfast = state_7[3];
+
+    fCaCaMKfast = state_8[0];
+    xrfast = state_8[1];
+    xrslow = state_8[2];
+    xs1 = state_8[3];
+
+    xs2 = state_9[0];
+    xK1 = state_9[1];
+    JrelNP = state_9[2];
+    JrelCaMK = state_9[3];
+
+    CaMKtrap = state_10[0];
+
+    Na_i_base = Na_i;
+    Na_i_diff = 0.0;
+    Na_ss_base = Na_ss;
+    Na_ss_diff = 0.0;
+    K_i_base = K_i;
+    K_i_diff = 0.0;
+    K_ss_base = K_ss;
+    K_ss_diff = 0.0;
 
     float compare_stride = round(sample_interval / dt);
 
@@ -922,7 +959,7 @@ void main() {
         betaCajsr_inv = 1.0 + csqnkmcsqn/bc1;
         Ca_jsr = Ca_jsr + dt * ((Jtr - Jrel) / betaCajsr_inv);
 
-        if (step_count > pre_pace_steps) {
+        if (!prepacing) {
             // APD only mode
             if (data_type == 1) {
                 if (!activated && u > apd_thresh) {
@@ -969,7 +1006,7 @@ void main() {
         }
 
         // Save time series data for plotting
-        if (float((step_count - pre_pace_steps) - 1) / float((num_steps - pre_pace_steps) - 1) <= cc.x) {
+        if (float(step_count - 1) / float(num_steps - 1) <= cc.x) {
             saved_value = u;
         }
     }
@@ -1007,4 +1044,15 @@ void main() {
     }
 
     error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
+    state_out_texture_0 = vec4(V, Na_i, Na_ss, K_i);
+    state_out_texture_1 = vec4(K_ss, Ca_i, Ca_ss, Ca_nsr);
+    state_out_texture_2 = vec4(Ca_jsr, m, hfast, hslow);
+    state_out_texture_3 = vec4(j, hCaMKslow, jCaMK, mL);
+    state_out_texture_4 = vec4(hL, hLCaMK, a, ifast);
+    state_out_texture_5 = vec4(islow, aCaMK, iCaMKfast, iCaMKslow);
+    state_out_texture_6 = vec4(d, ffast, fslow, fCafast);
+    state_out_texture_7 = vec4(fCaslow, jCa, n, fCaMKfast);
+    state_out_texture_8 = vec4(fCaCaMKfast, xrfast, xrslow, xs1);
+    state_out_texture_9 = vec4(xs2, xK1, JrelNP, JrelCaMK);
+    state_out_texture_10 = vec4(CaMKtrap, 0.0, 0.0, 0.0);
 }
