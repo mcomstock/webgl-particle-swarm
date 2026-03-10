@@ -1,0 +1,42 @@
+[{
+    "simulation": {
+      "model": "ap",
+      "num_beats": 4,
+      "pre_beats": 4,
+      "sample_interval": 1,
+      "normalize": true,
+      "normalization_max": 1,
+      "normalization_min": 0
+    },
+    "stimulus": {
+      "stim_dur": 2,
+      "stim_mag": 0.2,
+      "stim_biphasic": false,
+      "stim_offset_1": 0,
+      "stim_offset_2": 0,
+      "stim_t_scale": 0
+    },
+    "particles": {
+      "lower_bounds": {
+        "ap_k": 1,
+        "ap_a": 0.01,
+        "ap_b": 0.08,
+        "ap_eps0": 0.0005,
+        "ap_mu1": 0.05,
+        "ap_mu2": 0.05
+      },
+      "upper_bounds": {
+        "ap_k": 20,
+        "ap_a": 0.5,
+        "ap_b": 0.5,
+        "ap_eps0": 0.2,
+        "ap_mu1": 0.5,
+        "ap_mu2": 1
+      },
+      "phi_local": 2.05,
+      "phi_global": 2.05,
+      "chi": 0.73,
+      "particle_count": 4096,
+      "iteration_count": 100
+    }
+  }]

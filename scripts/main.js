@@ -131,16 +131,20 @@ require([
 
   
   const run_scripted_pso = async () => {
-    // Create a PSO object for each PSO run in the config file
+    // Create a map of PSO inputs for each run in the config file
     const script_config = await pso_interface.getScriptConfig();
-    const pso_list = await createScriptedPsoList(script_config);
+    const pso_map = await createScriptedPsoMap(script_config);
     const input_data = await pso_interface.getAllInputData();
     
-    // Run each PSO object
+    // Init and run each PSO object sequentially
     const script_results = []
-    for (const [i, curr_pso] of pso_list.entries()) {
-      pso_interface.updateRunCountStatus(i+1, pso_list.length);
-      pso = curr_pso;
+    for (const [i, pm] of pso_map.entries()) {
+      pso_interface.updateRunCountStatus(i+1, pso_map.length);
+
+      pso = new Pso(pm.hyperparams.particle_count);
+      pso.setupEnv(pm.model, pm.bounds, pm.stimulus_params, pm.pre_beats, pm.num_beats, pm.sample_interval, pm.normalize, pm.normalization_max, pm.normalization_min, pm.hyperparams)
+      pso.scripted = true;
+
       pso_interface.model_select.value = pso.env.simulation.model;
       pso.readData(input_data);
       pso.initializeTextures();
@@ -153,39 +157,34 @@ require([
     run_details = script_results;
   };
 
-  const createScriptedPsoList = async (script_config) => {
-    // Creates a PSO object for each run specified in the script config file
+  const createScriptedPsoMap = async (script_config) => {
+    // Creates a map of PSO object inputs for each run specified in the script config file
     const pso_list = [];
     for (const curr_config of script_config) {
+      const curr_map = {};
       // Update any scripted PSO environment parameters
-      const model = getEnvValue("model", pso_interface.model_select.value, curr_config);
-      const pre_beats = getEnvValue("pre_beats", pso_interface.data_pre_beats.value, curr_config);
-      const num_beats = getEnvValue("num_beats", pso_interface.data_num_beats.value, curr_config);
-      const sample_interval = getEnvValue("sample_interval", pso_interface.data_sample_interval.value, curr_config);
-      const normalize = getEnvValue("normalize", pso_interface.normalize.checked, curr_config);
-      const normalization_max = getEnvValue("normalization_max", Number(pso_interface.normalization_max.value), curr_config);
-      const normalization_min = getEnvValue("normalization_min", Number(pso_interface.normalization_min.value), curr_config);
-      const stimulus_params = getEnvValue("stimulus_params", await pso_interface.getStimulusParameters(), curr_config);
-      const bounds = Pso.getEnv()[model + "_bounds"]; // Start with default bounds for selected model
-      for (const [i, update] of [curr_config.particles.lower_bounds, curr_config.particles.upper_bounds].entries()) {
-        if (update != null) {
-          bounds[i] = Object.values(update);
-        }
-      }
-      const hyperparams = await pso_interface.getHyperparams();
-      for (const key in hyperparams) {
-        hyperparams[key] = getEnvValue(key, hyperparams[key], curr_config);
-      }
+      curr_map.model = getEnvValue("model", pso_interface.model_select.value, curr_config);
+      curr_map.pre_beats = getEnvValue("pre_beats", pso_interface.data_pre_beats.value, curr_config);
+      curr_map.num_beats = getEnvValue("num_beats", pso_interface.data_num_beats.value, curr_config);
+      curr_map.sample_interval = getEnvValue("sample_interval", pso_interface.data_sample_interval.value, curr_config);
+      curr_map.normalize = getEnvValue("normalize", pso_interface.normalize.checked, curr_config);
+      curr_map.normalization_max = getEnvValue("normalization_max", Number(pso_interface.normalization_max.value), curr_config);
+      curr_map.normalization_min = getEnvValue("normalization_min", Number(pso_interface.normalization_min.value), curr_config);
+      curr_map.stimulus_params = getEnvValue("stimulus_params", await pso_interface.getStimulusParameters(), curr_config);
+      
+      curr_map.bounds = Pso.getEnv()[curr_map.model + "_bounds"]; // Start with default bounds for selected model
+      if (curr_config.particles?.lower_bounds != null) {curr_map.bounds[0] = Object.values(curr_config.particles.lower_bounds);};
+      if (curr_config.particles?.upper_bounds != null) {curr_map.bounds[1] = Object.values(curr_config.particles.lower_bounds);};
 
-      // Init PSO object
-      const curr_pso = new Pso(hyperparams.particle_count);
-      curr_pso.setupEnv(model, bounds, stimulus_params, pre_beats, num_beats, sample_interval, normalize, normalization_max, normalization_min, hyperparams)
-      curr_pso.scripted = true;
-
-      // Add to list N times
+      curr_map.hyperparams = await pso_interface.getHyperparams();
+      for (const key in curr_map.hyperparams) {
+        curr_map.hyperparams[key] = getEnvValue(key, curr_map.hyperparams[key], curr_config);
+      }
+      
+      // Init PSO and add to list N times
       const n = (curr_config.num_repeats != null) ? Math.max(1, curr_config.num_repeats) : 1;
       for (let i = 0; i < n; i++) {
-        pso_list.push(curr_pso)
+        pso_list.push(curr_map);
       }
     }
       

@@ -179,6 +179,14 @@ achieved by increasing the number of iterations. On the other hand, if many of t
 do not improve the best fit error, reducing the number of iterations may lead to similar fit quality
 while reducing the amount of computation and time required to generate a fit.
 
+### Adding a scripted run configuration
+The "Add script" button allows the user to upload a scripted PSO configuration file in JSON format. The structure of a script configuration file mirrors that of the output data JSON file. All settings in the script are optional, however, any settings that are included will override the corresponding interface selections.
+
+Script files may include the number of repeats for a given run configuration, model selection, number of pre-beats, number of cycles, data sample interval, normalization settings, stimulus settings, parameter bounds, and hyperparameters. The file example_script.json file demonstrates the required format and demonstrates usage of each available script input.
+
+During execution of a scripted run, the interface shows the progress of total PSO runs as well as iterations within the current PSO run. After all PSO runs are complete, a file that contains detailed fit information for every run may be downloaded using the "Save scripted run details" button.
+
+
 ## Potential failure cases
 
 Although support for the WebGL API is available in most modern web browsers, correctly implemented
