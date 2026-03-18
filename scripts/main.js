@@ -34,6 +34,7 @@ require([
   pso_interface.fit_all_button.onclick = () => pso_interface.setFitCheckboxes(true);
   pso_interface.fit_none_button.onclick = () => pso_interface.setFitCheckboxes(false);
   pso_interface.normalize.onclick = () => pso_interface.updateNormalizationDisplay();
+  pso_interface.auto_normalize.onclick = () => pso_interface.updateNormalizationDisplay();
   pso_interface.plot_from_vals_button.onclick = () => {
     if (!pso) {
       alert('A fit must be created before modifying the parameters');
@@ -85,6 +86,7 @@ require([
         weights,
         sample_interval,
         normalize,
+        auto_normalize,
         normalization_max,
         normalization_min,
         normalized_align_threshold,
@@ -100,6 +102,7 @@ require([
         weights,
         sample_interval,
         normalize,
+        auto_normalize,
         normalization_max,
         normalization_min,
         normalized_align_threshold,
@@ -163,6 +166,7 @@ require([
       pso_interface.normalize.checked,
       Number(pso_interface.normalization_max.value),
       Number(pso_interface.normalization_min.value),
+      pso_interface.auto_normalize.checked,
       hyperparams,
     );
 
@@ -291,9 +295,20 @@ require([
       align_index = plotting_sim_data.findIndex(x => x > align_thresh);
     }
 
+    const sim_max = Math.max(...plotting_sim_data);
+    const sim_min = Math.min(...plotting_sim_data);
+
+    if (pso.env.simulation.auto_normalize) {
+      const adt = [];
+      for (let i = 0; i < actual_data.length; ++i) {
+        adt.push(actual_data[i] * (sim_max - sim_min) + sim_min);
+      }
+      actual_data = adt;
+    }
+
     const scale = [
-      Math.min(...actual_data, ...plotting_sim_data),
-      Math.max(...actual_data, ...plotting_sim_data),
+      Math.min(...actual_data, sim_min),
+      Math.max(...actual_data, sim_max),
     ];
 
     const interval = Number(pso_interface.data_sample_interval.value);

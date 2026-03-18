@@ -5,6 +5,7 @@ precision highp int;
 
 uniform sampler2D in_particles_1, in_particles_2, data_texture;
 uniform sampler2D state_textures_0, state_textures_1, state_textures_2, state_textures_3, state_textures_4, state_textures_5;
+uniform sampler2D normalize_texture;
 
 layout (location = 0) out vec4 error_texture;
 layout (location = 1) out vec4 state_out_texture_0;
@@ -21,7 +22,7 @@ uniform int num_beats, data_type, err_type;
 uniform float align_thresh;
 uniform float sample_interval, apd_thresh, weight;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
-uniform bool prepacing;
+uniform bool prepacing, normalizing, auto_normalize;
 uniform bool stim_biphasic;
 
 uniform sampler2D table;
@@ -430,6 +431,14 @@ void main() {
     float APD_start, APD_end;
 
     bool activated = false;
+
+    float maxu = -1.0e10;
+    float minu = 1.0e10;
+
+    vec2 norms;
+    if (!prepacing && !normalizing && auto_normalize) {
+        norms = texelFetch(normalize_texture, state_idx, 0).xy;
+    }
 
     float vidxint;
     int vidx1, table_idx1;
@@ -971,27 +980,36 @@ void main() {
         betaCajsr_inv = 1.0 + csqnkmcsqn/bc1;
         Ca_jsr = Ca_jsr + dt * ((Jtr - Jrel) / betaCajsr_inv);
 
-        if (!prepacing) {
+        maxu = max(u, maxu);
+        minu = min(u, minu);
+
+        if (!prepacing && !normalizing) {
+            float normed_u = u;
+            if (auto_normalize) {
+                normed_u = (u - norms[0]) / (norms[1] - norms[0]);
+                prev_u = (prev_u - norms[0]) / (norms[1] - norms[0]);
+            }
+
             // APD only mode
             if (data_type == 1) {
-                if (!activated && u > apd_thresh) {
+                if (!activated && normed_u > apd_thresh) {
                     activated = true;
                     float x0 = float((step_count-1))*dt;
                     float x1 = float(step_count)*dt;
 
                     float y0 = prev_u;
-                    float y1 = u;
+                    float y1 = normed_u;
 
                     // Linear interpolation of actual crossing of threshold
                     APD_start = (x0*(y1 - apd_thresh) + x1*(apd_thresh - y0)) / (y1-y0);
-                } else if (activated && u < apd_thresh) {
+                } else if (activated && normed_u < apd_thresh) {
                     activated = false;
 
                     float x0 = float((step_count-1))*dt;
                     float x1 = float(step_count)*dt;
 
                     float y0 = prev_u;
-                    float y1 = u;
+                    float y1 = normed_u;
 
                     // Linear interpolation of actual crossing of threshold
                     APD_end = (x0*(y1 - apd_thresh) + x1*(apd_thresh - y0)) / (y1-y0);
@@ -1003,7 +1021,7 @@ void main() {
             }
             // Curve error only mode
             else {
-                if (!first_align_upstroke && u > align_thresh) {
+                if (!first_align_upstroke && normed_u > align_thresh) {
                     first_align_upstroke = true;
                     start_comp = step_count;
                     error = 0.0;
@@ -1011,7 +1029,7 @@ void main() {
                 // Measure curve error
                 if (first_align_upstroke && mod(float(step_count - start_comp), compare_stride) == 0.0) {
                     float actual = texelFetch(data_texture, ivec2(data_index++, 0), 0).r;
-                    error += err_type == 1 ? abs(u - actual) : (u - actual) * (u - actual);
+                    error += err_type == 1 ? abs(normed_u - actual) : (normed_u - actual) * (normed_u - actual);
                     compared_points += 1;
                 }
             }
@@ -1062,12 +1080,16 @@ void main() {
 
     error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
 
-    state_out_texture_0 = vec4(
-        uintBitsToFloat(packHalf2x16(vec2(V, Na_i))),
-        uintBitsToFloat(packHalf2x16(vec2(Na_ss, K_i))),
-        uintBitsToFloat(packHalf2x16(vec2(K_ss, Ca_i))),
-        uintBitsToFloat(packHalf2x16(vec2(Ca_ss, Ca_nsr)))
-    );
+    if (normalizing) {
+        state_out_texture_0 = vec4(minu, maxu, 0.0, 0.0);
+    } else {
+        state_out_texture_0 = vec4(
+            uintBitsToFloat(packHalf2x16(vec2(V, Na_i))),
+            uintBitsToFloat(packHalf2x16(vec2(Na_ss, K_i))),
+            uintBitsToFloat(packHalf2x16(vec2(K_ss, Ca_i))),
+            uintBitsToFloat(packHalf2x16(vec2(Ca_ss, Ca_nsr)))
+        );
+    }
 
     state_out_texture_1 = vec4(
         uintBitsToFloat(packHalf2x16(vec2(Ca_jsr, m))),

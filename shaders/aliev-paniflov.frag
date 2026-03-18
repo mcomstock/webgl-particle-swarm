@@ -6,6 +6,7 @@ precision highp int;
 uniform sampler2D in_particles_1;
 uniform sampler2D data_texture;
 uniform sampler2D state_textures_0;
+uniform sampler2D normalize_texture;
 
 layout (location = 0) out vec4 error_texture;
 layout (location = 1) out vec4 state_out_texture_0;
@@ -18,7 +19,7 @@ uniform int num_beats, data_type, err_type;
 uniform float align_thresh;
 uniform float sample_interval, apd_thresh, weight;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
-uniform bool prepacing;
+uniform bool prepacing, normalizing, auto_normalize;
 uniform bool stim_biphasic;
 
 float biphasic_stim_f(const float t) {
@@ -84,6 +85,14 @@ void main() {
 
     bool activated = false;
 
+    float maxu = -1.0e10;
+    float minu = 1.0e10;
+
+    vec2 norms;
+    if (!prepacing && !normalizing && auto_normalize) {
+        norms = texelFetch(normalize_texture, state_idx, 0).xy;
+    }
+
     // Run the simulation with the current swarm parameters
     for (int step_count = 1; step_count <= num_steps; ++step_count) {
         float stim = 0.0;
@@ -103,27 +112,36 @@ void main() {
         u = u + dt*du;
         v = v + dt*dv;
 
-        if (!prepacing) {
-            //APD only mode
+        maxu = max(u, maxu);
+        minu = min(u, minu);
+
+        if (!prepacing && !normalizing) {
+            float normed_u = u;
+            if (auto_normalize) {
+                normed_u = (u - norms[0]) / (norms[1] - norms[0]);
+                prev_u = (prev_u - norms[0]) / (norms[1] - norms[0]);
+            }
+
+            // APD only mode
             if (data_type == 1) {
-                if (!activated && u > apd_thresh) {
+                if (!activated && normed_u > apd_thresh) {
                     activated = true;
-                    float x0 = float(step_count-1)*dt;
+                    float x0 = float((step_count-1))*dt;
                     float x1 = float(step_count)*dt;
 
                     float y0 = prev_u;
-                    float y1 = u;
+                    float y1 = normed_u;
 
                     // Linear interpolation of actual crossing of threshold
                     APD_start = (x0*(y1 - apd_thresh) + x1*(apd_thresh - y0)) / (y1-y0);
-                } else if (activated && u < apd_thresh) {
+                } else if (activated && normed_u < apd_thresh) {
                     activated = false;
 
-                    float x0 = float(step_count-1)*dt;
+                    float x0 = float((step_count-1))*dt;
                     float x1 = float(step_count)*dt;
 
                     float y0 = prev_u;
-                    float y1 = u;
+                    float y1 = normed_u;
 
                     // Linear interpolation of actual crossing of threshold
                     APD_end = (x0*(y1 - apd_thresh) + x1*(apd_thresh - y0)) / (y1-y0);
@@ -135,7 +153,7 @@ void main() {
             }
             // Curve error only mode
             else {
-                if (!first_align_upstroke && u > align_thresh) {
+                if (!first_align_upstroke && normed_u > align_thresh) {
                     first_align_upstroke = true;
                     start_comp = step_count;
                     error = 0.0;
@@ -143,7 +161,7 @@ void main() {
                 // Measure curve error
                 if (first_align_upstroke && mod(float(step_count - start_comp), compare_stride) == 0.0) {
                     float actual = texelFetch(data_texture, ivec2(data_index++, 0), 0).r;
-                    error += err_type == 1 ? abs(u - actual) : (u - actual) * (u - actual);
+                    error += err_type == 1 ? abs(normed_u - actual) : (normed_u - actual) * (normed_u - actual);
                     compared_points += 1;
                 }
             }
@@ -187,5 +205,10 @@ void main() {
     }
 
     error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
-    state_out_texture_0 = vec4(u, v, 0.0, 0.0);
+
+    if (normalizing) {
+        state_out_texture_0 = vec4(minu, maxu, 0.0, 0.0);
+    } else {
+        state_out_texture_0 = vec4(u, v, 0.0, 0.0);
+    }
 }

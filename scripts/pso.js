@@ -136,6 +136,7 @@ define('scripts/pso', [
           normalization_min: 0.0,
           normalized_align_threshold: 0.15,
           normalized_ca_align_threshold: 0.15,
+          auto_normalize: false,
           err_type: 'abs',
         },
         stimulus: {
@@ -368,7 +369,7 @@ define('scripts/pso', [
       return env;
     }
 
-    setupEnv(model, bounds, stimulus_params, pre_beats, num_beats, sample_interval, normalize, normalization_max, normalization_min, hyperparams) {
+    setupEnv(model, bounds, stimulus_params, pre_beats, num_beats, sample_interval, normalize, normalization_max, normalization_min, auto_normalize, hyperparams) {
       this.env = Pso.getEnv();
       const env = this.env;
 
@@ -384,6 +385,13 @@ define('scripts/pso', [
 
       if (Number(sample_interval)) {
         env.simulation.sample_interval = Number(sample_interval);
+      }
+
+      env.simulation.auto_normalize = auto_normalize;
+      if (auto_normalize) {
+        normalize = true;
+        normalization_max = 1;
+        normalization_min = 0;
       }
 
       env.simulation.normalize = normalize;
@@ -555,6 +563,7 @@ define('scripts/pso', [
       const data_arrays = this.env.simulation.data_arrays;
       const init_arrays = this.initializeParticles();
       const zero_array = new Float32Array(tex_width*tex_height*4);
+      const particle_zero_array = new Float32Array(particles_width*particles_height*4);
 
       const global_best_array = new Float32Array(16);
 
@@ -565,6 +574,8 @@ define('scripts/pso', [
         this.simulation_lengths.push(Math.ceil(Math.ceil(num_beats * period[i]) / sample_interval));
         this.data_textures.push(gl_helper.loadFloatTexture(data_arrays[i].length/4, 1, data_arrays[i]));
       }
+
+      const sim_zero_array = new Float32Array(Math.max(...this.simulation_lengths)*4);
 
       this.particles_textures = [];
       this.velocities_textures = [];
@@ -637,6 +648,14 @@ define('scripts/pso', [
           this.final_state_out_textures[i].push(gl_helper.loadFloatTexture(Math.max(...this.simulation_lengths), 1, null));
         }
       }
+
+      this.normalize_textures = [];
+      this.final_normalize_textures = [];
+      for (let cl = 0; cl < period.length; ++cl) {
+        this.normalize_textures.push(gl_helper.loadFloatTexture(particles_width, particles_height, particle_zero_array));
+        this.final_normalize_textures.push(gl_helper.loadFloatTexture(Math.max(...this.simulation_lengths), 1, sim_zero_array));
+      }
+      this.dummy_normalize_texture = gl_helper.loadFloatTexture(1, 1, new Float32Array([0, 0, 0, 0]));
 
       const env = this.env;
 
@@ -824,7 +843,7 @@ define('scripts/pso', [
         'ap': APShader,
       };
 
-      const makeRunSimulationSolver = (final) => {
+      const makeRunSimulationSolver = (final, normalize) => {
         const solver = {
           vert: DefaultVertexShader,
           frag: model_shader_map[this.env.simulation.model],
@@ -846,6 +865,8 @@ define('scripts/pso', [
             ['apd_thresh', '1f', (cl_idx) => this.env.simulation.apd_threshs[cl_idx]],
             ['weight', '1f', (cl_idx) => this.env.simulation.weights[cl_idx]],
             ['err_type', '1i', () => Pso.err_type_map[this.env.simulation.err_type]],
+            ['normalizing', '1i', () => normalize],
+            ['auto_normalize', '1i', () => this.env.simulation.auto_normalize],
           ],
           out: [final ? this.simulation_texture : this.error_texture],
           run: final ? this.gl_helper.runFinal : this.gl_helper.runSimulation,
@@ -862,10 +883,28 @@ define('scripts/pso', [
         for (let i = 0; i < this.state_textures.length; ++i) {
           if (final) {
             solver.uniforms.push(['state_textures_' + i, 'tex', (cl_idx) => this.final_state_textures[i][cl_idx]]);
-            solver.out.push((cl_idx) => this.final_state_out_textures[i][cl_idx]);
+            if (normalize && i === 0) {
+              solver.out.push((cl_idx) => this.final_normalize_textures[cl_idx]);
+            } else {
+              solver.out.push((cl_idx) => this.final_state_out_textures[i][cl_idx]);
+            }
           } else {
             solver.uniforms.push(['state_textures_' + i, 'tex', (cl_idx) => this.state_textures[i][cl_idx]]);
-            solver.out.push((cl_idx) => this.state_out_textures[i][cl_idx]);
+            if (normalize && i === 0) {
+              solver.out.push((cl_idx) => this.normalize_textures[cl_idx]);
+            } else {
+              solver.out.push((cl_idx) => this.state_out_textures[i][cl_idx]);
+            }
+          }
+        }
+
+        if (normalize) {
+          solver.uniforms.push(['normalize_texture', 'tex', () => this.dummy_normalize_texture]);
+        } else {
+          if (final) {
+            solver.uniforms.push(['normalize_texture', 'tex', (cl_idx) => this.final_normalize_textures[cl_idx]]);
+          } else {
+            solver.uniforms.push(['normalize_texture', 'tex', (cl_idx) => this.normalize_textures[cl_idx]]);
           }
         }
 
@@ -885,9 +924,11 @@ define('scripts/pso', [
       };
 
       const shader_map = {
-        run_simulation: makeRunSimulationSolver(false),
+        run_simulation: makeRunSimulationSolver(false, false),
+        run_final_simulation: makeRunSimulationSolver(true, false),
 
-        run_final_simulation: makeRunSimulationSolver(true),
+        run_simulation_normalize: makeRunSimulationSolver(false, true),
+        run_final_simulation_normalize: makeRunSimulationSolver(true, true),
 
         reduce_error_1: {
           vert: DefaultVertexShader,
@@ -1154,6 +1195,12 @@ define('scripts/pso', [
 
       this.prepacing = false;
 
+      if (this.env.simulation.auto_normalize) {
+        for (let i = 0; i < this.env.simulation.period.length; ++i) {
+          await program_map.run_simulation_normalize(i, false, true);
+        }
+      }
+
       for (let i = 0; i < this.env.simulation.period.length; ++i) {
         await nextframe();
         program_map.run_simulation(i, i === 0, false);
@@ -1242,30 +1289,24 @@ define('scripts/pso', [
       }
     }
 
-    async runFinalPrepacingIterations() {
+    async runFinalPrepacingIterations(cl_idx) {
       const program_map = this.program_map;
       const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
 
       this.prepacing = true;
 
       for (let i = 0; i < this.state_textures.length; ++i) {
-        for (let j = 0; j < this.env.simulation.period.length; ++j) {
-          await nextframe();
-          program_map['final_state_textures_init_' + i + '_' + j]();
-        }
+        await nextframe();
+        program_map['final_state_textures_init_' + i + '_' + cl_idx]();
       }
 
       for (let ppb = 0; ppb < this.env.simulation.pre_beats; ++ppb) {
-        for (let i = 0; i < this.env.simulation.period.length; ++i) {
-          await nextframe();
-          program_map.run_final_simulation(i, Math.max(...this.simulation_lengths));
-        }
+        await nextframe();
+        program_map.run_final_simulation(cl_idx, Math.max(...this.simulation_lengths));
 
         for (let i = 0; i < this.state_textures.length; ++i) {
-          for (let j = 0; j < this.env.simulation.period.length; ++j) {
-            await nextframe();
-            program_map['final_state_textures_copy_' + i + '_' + j]();
-          }
+          await nextframe();
+          program_map['final_state_textures_copy_' + i + '_' + cl_idx]();
         }
       }
     }
@@ -1282,8 +1323,13 @@ define('scripts/pso', [
 
       this.setFinalPosition(simsize, parameter_values);
 
-      await this.runFinalPrepacingIterations();
+      await this.runFinalPrepacingIterations(cl_idx);
       this.prepacing = false;
+
+      if (this.env.simulation.auto_normalize) {
+        await this.program_map.run_final_simulation_normalize(cl_idx, Math.max(...this.simulation_lengths));
+      }
+
       this.program_map.run_final_simulation(cl_idx, simsize);
 
       const texture_array = new Float32Array(texsize);

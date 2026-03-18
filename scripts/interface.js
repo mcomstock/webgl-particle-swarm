@@ -114,6 +114,7 @@ define('scripts/interface', [
         this[model] = model_elements;
       }
 
+      this.auto_normalize = document.getElementById('auto-normalize');
       this.normalize = document.getElementById('normalize');
       this.normalization_max = document.getElementById('normalization-max');
       this.normalization_min = document.getElementById('normalization-min');
@@ -177,12 +178,18 @@ define('scripts/interface', [
     }
 
     updateNormalizationDisplay() {
-      if (this.normalize.checked) {
+      if (this.normalize.checked && !this.auto_normalize.checked) {
         this.normalization_max.disabled = false;
         this.normalization_min.disabled = false;
       } else {
         this.normalization_max.disabled = true;
         this.normalization_min.disabled = true;
+      }
+
+      if (this.auto_normalize.checked) {
+        this.normalize.disabled = true;
+      } else {
+        this.normalize.disabled = false;
       }
     }
 
