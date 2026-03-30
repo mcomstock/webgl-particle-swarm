@@ -195,6 +195,7 @@ void main() {
             table[0] = zNa * zNa * V * FFRT / (exp(zNa*V*FRT) - 1.0);
         }
         // ICab_coeff
+        // TODO Make this check inexact
         if (V == 0.0) {
             // l'hopital
             table[1] = zCa * FF;

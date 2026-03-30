@@ -9,7 +9,6 @@ uniform sampler2D state_textures_0;
 uniform sampler2D normalize_texture;
 
 layout (location = 0) out vec4 error_texture;
-layout (location = 1) out vec4 state_out_texture_0;
 
 in vec2 cc;
 
@@ -187,7 +186,7 @@ void main() {
         xsi = (u >= thsi) ? -w*s/tsi : 0.0;
 
         float stim = 0.0;
-        float stim_t = mod(float(step_count)*dt, period);
+        float stim_t = mod(float(step_count-1)*dt, period);
         if (stim_t < stim_dur) {
             if (stim_biphasic) {
                 stim = biphasic_stim_f(stim_t);
@@ -293,11 +292,11 @@ void main() {
         error += 1e6;
     }
 
-    error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
-
-    if (normalizing) {
-        state_out_texture_0 = vec4(minu, maxu, 0.0, 0.0);
+    if (prepacing) {
+        error_texture = vec4(u, v, w, s);
+    } else if (normalizing) {
+        error_texture = vec4(minu, maxu, 0.0, 0.0);
     } else {
-        state_out_texture_0 = vec4(u, v, w, s);
+        error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
     }
 }

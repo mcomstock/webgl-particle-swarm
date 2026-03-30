@@ -15,7 +15,6 @@ define('scripts/pso', [
   'text!shaders/update_topological_best_complete.frag',
   'text!shaders/update_topological_best_grid.frag',
   'text!shaders/update_topological_best_ring.frag',
-  'text!shaders/round_float.frag',
   'text!shaders/hector_fhn.frag',
   'text!shaders/bueno_4v.frag',
   'text!shaders/bueno_brugada.frag',
@@ -28,7 +27,8 @@ define('scripts/pso', [
   'text!shaders/ortp.frag',
   'text!shaders/aliev-paniflov.frag',
   'text!shaders/set_ics.frag',
-  'text!shaders/set_packed_ics.frag',
+  'text!shaders/init_ortp.frag',
+  'text!shaders/init_ovvr.frag',
 ], function(
   GlHelper,
   CopyShader,
@@ -46,7 +46,6 @@ define('scripts/pso', [
   UpdateTopologicalBestsCompleteShader,
   UpdateTopologicalBestsGridShader,
   UpdateTopologicalBestsRingShader,
-  RoundFloatShader,
   HectorFHNShader,
   Bueno4vShader,
   BuenoBrugadaShader,
@@ -59,7 +58,8 @@ define('scripts/pso', [
   OrtpShader,
   APShader,
   SetIcsShader,
-  SetPackedIcsShader,
+  InitOrtpShader,
+  InitOvvrShader,
 ) {
   'use strict';
 
@@ -90,9 +90,6 @@ define('scripts/pso', [
       canvas.height = this.particles_height;
 
       this.gl_helper = new GlHelper(canvas);
-
-      // TODO should probably come up with a better solution
-      this.prepacing = false;
     }
 
     static data_type_map = {
@@ -138,6 +135,7 @@ define('scripts/pso', [
           normalized_ca_align_threshold: 0.15,
           auto_normalize: false,
           err_type: 'abs',
+          ics: [],
         },
         stimulus: {
           stim_dur: 10.0,
@@ -150,7 +148,7 @@ define('scripts/pso', [
         particles: {
           phi_local: 2.05,
           phi_global: 2.05,
-          global_bests: [],
+          global_bests: new Float32Array(),
           best_error_value: 1e10,
           lower_bounds: [],
           upper_bounds: [],
@@ -340,6 +338,9 @@ define('scripts/pso', [
           // gnafast gnalate  gto   pca      pcana    pcak       pcacamk  pcanacamk pcakcamk   gkr    gks     gk1     gnaca   gnak  pnab       pcab     gkb     gpca
           [  37.5,   0.00375, 0.01, 0.00005, 6.25e-8, 1.787e-8, 5.5e-5,  6.875e-8, 1.9657e-8, 0.023, 0.0017, 0.0954, 0.0004, 15.0, 1.875e-10, 1.25e-8, 0.0015, 0.00025],
           [  150.0,  0.015,   0.04, 0.0002,  2.5e-7,  7.148e-8, 0.00022, 2.75e-7,  7.8628e-8, 0.092, 0.0068, 0.3816, 0.0016, 60.0, 7.5e-10,   5.0e-8,  0.006,  0.001],
+
+          // [129.40371704101562, 0.007744332309812307, 0.025889599695801735, 0.00005450226672110148, 1.582629209906372e-7, 6.074812830547671e-8, 0.00010538144852034748, 1.4562455419309117e-7, 5.1735945305608766e-8, 0.028930267319083214, 0.0030572263058274984, 0.2827710211277008, 0.001538076321594417, 39.12760925292969, 5.102352984565073e-10, 3.937519821306523e-8, 0.002562799723818898, 0.0005523095023818314],
+          // [129.40371704101562, 0.007744332309812307, 0.025889599695801735, 0.00005450226672110148, 1.582629209906372e-7, 6.074812830547671e-8, 0.00010538144852034748, 1.4562455419309117e-7, 5.1735945305608766e-8, 0.028930267319083214, 0.0030572263058274984, 0.2827710211277008, 0.001538076321594417, 39.12760925292969, 5.102352984565073e-10, 3.937519821306523e-8, 0.002562799723818898, 0.0005523095023818314],
         ],
         ortp_bounds: [
           // gna     gto   pca      pcana    pcak       pcacamk  pcanacamk pcakcamk   gkr    gks     gk1     gnaca   gnak  pnab       pcab     gkb     gpca
@@ -353,16 +354,37 @@ define('scripts/pso', [
         ],
         velocity_update: {},
         ics: {
-          ms: [0.0, 1.0],
-          mms: [0.0, 1.0],
-          fhn: [0.0, 0.0],
-          ap: [0.0, 0.0],
-          fk: [0.0, 1.0, 1.0],
-          b4v: [0.0, 1.0, 1.0, 0.0],
-          bb: [0.0, 1.0, 1.0, 0.0],
-          tnnp2006: [-84.7, 0.9891, 9.413, 136.1, 0.0001021, 0.002111, 3.385, 0.001634, 0.7512, 0.7508, 0.003213, 3.27e-5, 0.9771, 0.9995, 1.0, 0.0, 0.0, 0.0, 0.0],
-          ovvr: [-87.84, 7.23, 7.23, 143.79, 143.79, 8.54e-5, 8.43e-5, 1.61, 1.56, 0.0074621, 0.692591, 0.692574, 0.692477, 0.448501, 0.692413, 0.000194015, 0.496116, 0.265885, 0.00101185, 0.999542, 0.589579, 0.000515567, 0.999542, 0.641861, 2.43015e-9, 1.0, 0.910671, 1.0, 0.99982, 0.999977, 0.00267171, 1.0, 1.0, 8.26608e-6, 0.453268, 0.270492, 0.0001963, 0.996801, 2.53943e-5, 3.17262e-7, 0.0124065],
-          ortp: [-87.852948063675726, 7.0392546150493178, 7.0393347733953027, 143.96135641252130, 143.96133202798799, 8.3881023438298657e-5, 8.2772564492747630e-5, 1.5672795239503670, 1.5261659336262898, 9.7991163152215356e-4, 0.80949981914040681, 0.80934296248967219, 1.0111996752124317e-3, 0.99954240640082770, 0.60310052987525253, 5.1523608441461936e-4, 0.99954241327569771, 0.65841214647941604, 2.4246864435205784e-9, 0.99999999049967647, 0.92312278514718482, 0.99999999049973498, 0.99987265676003101, 0.99998338629400885, 2.4911629583080604e-3, 0.99999999049692279, 0.99999999049708876, 8.2273738196810401e-6, 0.43975667031918381, 0.24476268201089038, 1.9608490236542564e-4, 0.99679863494646970, 2.3426825206602286e-7, 2.9268612848908905e-7, 1.1108986413883167e-2]
+          ms: { 0: [0.0, 1.0] },
+          mms: { 0: [0.0, 1.0] },
+          fhn: { 0: [0.0, 0.0] },
+          ap: { 0: [0.0, 0.0] },
+          fk: { 0: [0.0, 1.0, 1.0] },
+          b4v: { 0: [0.0, 1.0, 1.0, 0.0] },
+          bb: { 0: [0.0, 1.0, 1.0, 0.0] },
+          tnnp2006: {
+            1000: [-84.7, 0.9891, 9.413, 136.1, 0.0001021, 0.002111, 3.385, 0.001634, 0.7512, 0.7508, 0.003213, 3.27e-5, 0.9771, 0.9995, 1.0, 0.0, 0.0, 0.0, 0.0],
+            900: [-8.53385313e+01, 9.83510276e-01, 1.01423012e+01, 1.35321308e+02, 1.08655721e-04, 2.30991931e-04, 3.68552855e+00, 1.67633258e-03, 7.47857371e-01, 7.46921348e-01, 3.31005462e-03, 3.32375621e-05, 9.62810937e-01, 9.99495577e-01, 9.99933564e-01, 2.37346651e-08, 5.86365549e-01, 2.12793118e-04, 4.72303646e-01],
+            800: [-8.52374482e+01, 9.74470572e-01, 1.06345405e+01, 1.34790260e+02, 1.14568511e-04, 2.55486242e-04, 3.91983411e+00, 1.71270719e-03, 7.45065490e-01, 7.42309821e-01, 3.55867616e-03, 3.36887664e-05, 9.39313134e-01, 9.99488078e-01, 9.99812149e-01, 2.41399037e-08, 5.25452408e-01, 2.52337347e-04, 4.71253088e-01],
+            700: [-8.51205174e+01, 9.60013106e-01, 1.11442549e+01, 1.34246204e+02, 1.22005089e-04, 2.89023615e-04, 4.12576672e+00, 1.75574881e-03, 7.41762898e-01, 7.33121483e-01, 4.29903681e-03, 3.42186794e-05, 9.01543453e-01, 9.99479011e-01, 9.99437115e-01, 2.46202923e-08, 4.57376186e-01, 5.67118518e-04, 4.70036737e-01],
+            600: [-8.49654090e+01, 9.37389442e-01, 1.16117592e+01, 1.33752701e+02, 1.33295259e-04, 3.36930334e-04, 4.27163886e+00, 1.81448009e-03, 7.37218987e-01, 7.10686687e-01, 6.47963453e-03, 3.49352876e-05, 8.42226950e-01, 9.99466088e-01, 9.98336638e-01, 2.52797892e-08, 3.82995195e-01, 2.91207674e-03, 4.68420382e-01],
+            500: [-8.47166025e+01, 9.03217458e-01, 1.19264953e+01, 1.33427036e+02, 1.53304064e-04, 4.07298404e-04, 4.30229870e+00, 1.91272606e-03, 7.29530270e-01, 6.55780869e-01, 1.24172752e-02, 3.61180006e-05, 7.53453969e-01, 9.99443012e-01, 9.95383122e-01, 2.63918208e-08, 3.05087667e-01, 1.71192198e-02, 4.65821656e-01],
+            400: [-8.42687847e+01, 8.54058053e-01, 1.19539901e+01, 1.33413331e+02, 1.88802334e-04, 5.11161598e-04, 4.14339144e+00, 2.10281653e-03, 7.14690111e-01, 5.43209978e-01, 2.63307127e-02, 3.83514169e-05, 6.32477747e-01, 9.99375555e-01, 9.88254335e-01, 2.85491065e-08, 2.29430938e-01, 7.82784051e-02, 4.61136893e-01],
+            300: [-8.35246206e+01, 7.86468866e-01, 1.18313678e+01, 1.33579840e+02, 2.44381789e-04, 6.66183072e-04, 3.76351121e+00, 2.46020717e-03, 6.87481921e-01, 3.68145464e-01, 5.19800199e-02, 4.23729121e-05, 4.93137820e-01, 9.98186389e-01, 9.71460393e-01, 3.25428810e-08, 1.64576483e-01, 2.39147017e-01, 4.53363048e-01],
+            250: [-8.31203885e+01, 7.44617375e-01, 1.15898878e+01, 1.33858314e+02, 2.74475675e-04, 7.72744978e-04, 3.48322700e+00, 2.67846877e-03, 6.64502529e-01, 2.66674833e-01, 6.97759161e-02, 4.47305836e-05, 4.24144592e-01, 9.93550784e-01, 9.54530521e-01, 3.51771074e-08, 1.38173744e-01, 3.49351925e-01, 4.49151085e-01],
+          },
+          ovvr: {
+            1000: [-87.84, 7.23, 7.23, 143.79, 143.79, 8.54e-5, 8.43e-5, 1.61, 1.56, 0.0074621, 0.692591, 0.692574, 0.692477, 0.448501, 0.692413, 0.000194015, 0.496116, 0.265885, 0.00101185, 0.999542, 0.589579, 0.000515567, 0.999542, 0.641861, 2.43015e-9, 1.0, 0.910671, 1.0, 0.99982, 0.999977, 0.00267171, 1.0, 1.0, 8.26608e-6, 0.453268, 0.270492, 0.0001963, 0.996801, 2.53943e-5, 3.17262e-7, 0.0124065],
+            900: [-8.78304025e+01, 7.37895397e+00, 7.37904521e+00, 1.43586623e+02, 1.43586594e+02, 8.83052869e-05, 8.74574654e-05, 1.65479771e+00, 1.58371506e+00, 7.47187452e-03, 6.92135133e-01, 6.92109510e-01, 6.91965978e-01, 4.47941013e-01, 6.91868385e-01, 1.94495176e-04, 4.89116500e-01, 2.56510812e-01, 1.01274045e-03, 9.99540563e-01, 5.40736522e-01, 5.16021547e-04, 9.99540574e-01, 5.92843288e-01, 2.43766417e-09, 9.99999990e-01, 8.98268899e-01, 9.99999990e-01, 9.99552689e-01, 9.99917139e-01, 3.07729401e-03, 9.99999990e-01, 9.99999990e-01, 8.71550726e-06, 4.99901222e-01, 2.95185596e-01, 1.96616950e-04, 9.96804702e-01, 2.65009209e-07, 3.31018558e-07, 1.52386152e-02],
+            800: [-8.78129934e+01, 7.55661169e+00, 7.55671249e+00, 1.43344500e+02, 1.43344468e+02, 9.25359954e-05, 9.20770019e-05, 1.72462361e+00, 1.61390366e+00, 7.48496658e-03, 6.91525073e-01, 6.91486053e-01, 6.91265319e-01, 4.47183833e-01, 6.91110618e-01, 1.95139414e-04, 4.78279329e-01, 2.44938505e-01, 1.01393340e-03, 9.99539115e-01, 4.86420034e-01, 5.16629693e-04, 9.99539133e-01, 5.37332408e-01, 2.44774394e-09, 9.99999990e-01, 8.81952630e-01, 9.99999990e-01, 9.98876518e-01, 9.99709765e-01, 3.74842708e-03, 9.99999990e-01, 9.99999990e-01, 1.23597740e-05, 5.51615861e-01, 3.23644829e-01, 1.97050250e-04, 9.96809502e-01, 2.79998184e-07, 3.49638745e-07, 1.96074668e-02],
+            700: [-8.77905604e+01, 7.75743441e+00, 7.75754832e+00, 1.43066545e+02, 1.43066511e+02, 9.82747271e-05, 9.84440877e-05, 1.82579478e+00, 1.65025601e+00, 7.50187066e-03, 6.90737914e-01, 6.90677101e-01, 6.90327810e-01, 4.46191210e-01, 6.90059942e-01, 1.95972729e-04, 4.61627849e-01, 2.30468752e-01, 1.01547393e-03, 9.99537228e-01, 4.26506120e-01, 5.17415029e-04, 9.99537255e-01, 4.75085303e-01, 2.46080275e-09, 9.99999990e-01, 8.61483839e-01, 9.99999990e-01, 9.97219343e-01, 9.98999541e-01, 4.84159553e-03, 9.99999990e-01, 9.99999990e-01, 4.18597416e-05, 6.07838540e-01, 3.56681843e-01, 1.97637923e-04, 9.96815775e-01, 2.96881473e-07, 3.70570493e-07, 2.65867423e-02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            600: [-8.77602382e+01, 7.98792788e+00, 7.98806029e+00, 1.42738468e+02, 1.42738430e+02, 1.06098411e-04, 1.07350198e-04, 1.98609653e+00, 1.69951146e+00, 7.52478060e-03, 6.89672051e-01, 6.89573943e-01, 6.88994059e-01, 4.44819805e-01, 6.88398518e-01, 1.97104801e-04, 4.35910105e-01, 2.11925319e-01, 1.01756209e-03, 9.99534637e-01, 3.60605000e-01, 5.18479545e-04, 9.99534681e-01, 4.05403709e-01, 2.47858004e-09, 9.99999990e-01, 8.34940031e-01, 9.99999990e-01, 9.93227278e-01, 9.96609816e-01, 6.74423977e-03, 9.99999989e-01, 9.99999990e-01, 2.74082340e-04, 6.68712209e-01, 3.95978532e-01, 1.98787047e-04, 9.96824407e-01, 3.17809718e-07, 3.96478498e-07, 3.91387648e-02],
+            500: [-8.77165275e+01, 8.25716945e+00, 8.25732909e+00, 1.42335600e+02, 1.42335559e+02, 1.16940516e-04, 1.20244320e-04, 2.26395658e+00, 1.77315913e+00, 7.55792977e-03, 6.88131807e-01, 6.87964921e-01, 6.86862702e-01, 4.42784945e-01, 6.84726394e-01, 1.98748312e-04, 3.95707373e-01, 1.87272453e-01, 1.02058387e-03, 9.99530825e-01, 2.88332411e-01, 5.20020002e-04, 9.99530901e-01, 3.27460739e-01, 2.50446160e-09, 9.99999990e-01, 7.98948640e-01, 9.99999990e-01, 9.83774109e-01, 9.88708530e-01, 1.04293616e-02, 9.99999870e-01, 9.99999982e-01, 2.03682229e-03, 7.34234058e-01, 4.44268707e-01, 2.10145392e-04, 9.96837144e-01, 3.45063699e-07, 4.30195743e-07, 6.55670866e-02],
+            400: [-8.76389766e+01, 8.58061070e+00, 8.58081763e+00, 1.41821157e+02, 1.41821111e+02, 1.34922275e-04, 1.42589220e-04, 2.75226738e+00, 1.86536335e+00, 7.61710198e-03, 6.85388523e-01, 6.85075389e-01, 6.81286479e-01, 4.39073885e-01, 6.70224516e-01, 2.01698115e-04, 3.31328347e-01, 1.52696134e-01, 1.02597340e-03, 9.99523901e-01, 2.09619546e-01, 5.22767526e-04, 9.99524046e-01, 2.40584407e-01, 2.55109181e-09, 9.99999990e-01, 7.47387183e-01, 9.99999990e-01, 9.61815700e-01, 9.63163878e-01, 2.01873938e-02, 9.99984065e-01, 9.99998612e-01, 1.47565924e-02, 8.03913502e-01, 5.05473252e-01, 4.92209768e-04, 9.96860164e-01, 3.73449614e-07, 4.65162017e-07, 1.27474405e-01],
+            300: [-8.74415799e+01, 8.98030224e+00, 8.98062158e+00, 1.41180230e+02, 1.41180178e+02, 1.78659941e-04, 1.97567828e-04, 3.47116021e+00, 1.86056193e+00, 7.76980193e-03, 6.78347190e-01, 6.77649508e-01, 6.41357432e-01, 4.27747481e-01, 5.89446973e-01, 2.09405596e-04, 2.25115138e-01, 1.00931933e-01, 1.03982186e-03, 9.99505606e-01, 1.26142700e-01, 5.29827380e-04, 9.99506078e-01, 1.45899030e-01, 2.67374510e-09, 9.99999865e-01, 6.69845077e-01, 9.99999989e-01, 9.13204106e-01, 8.85440130e-01, 7.00516497e-02, 9.98293507e-01, 9.99812779e-01, 9.73264951e-02, 8.75025898e-01, 5.82252543e-01, 6.95297397e-03, 9.96924228e-01, 3.76055953e-07, 4.66513698e-07, 2.46966291e-01],
+          },
+          ortp: {
+            1000: [-87.852948063675726, 7.0392546150493178, 7.0393347733953027, 143.96135641252130, 143.96133202798799, 8.3881023438298657e-5, 8.2772564492747630e-5, 1.5672795239503670, 1.5261659336262898, 9.7991163152215356e-4, 0.80949981914040681, 0.80934296248967219, 1.0111996752124317e-3, 0.99954240640082770, 0.60310052987525253, 5.1523608441461936e-4, 0.99954241327569771, 0.65841214647941604, 2.4246864435205784e-9, 0.99999999049967647, 0.92312278514718482, 0.99999999049973498, 0.99987265676003101, 0.99998338629400885, 2.4911629583080604e-3, 0.99999999049692279, 0.99999999049708876, 8.2273738196810401e-6, 0.43975667031918381, 0.24476268201089038, 1.9608490236542564e-4, 0.99679863494646970, 2.3426825206602286e-7, 2.9268612848908905e-7, 1.1108986413883167e-2],
+          },
         },
       };
 
@@ -418,25 +440,10 @@ define('scripts/pso', [
       }
 
       // Initialize all global best values to 0
-      env.particles.global_bests = env.particles.lower_bounds.map(() => 0);
+      env.particles.global_bests = new Float32Array(env.particles.lower_bounds.length);
 
       env.particles.particle_count = this.particles_width * this.particles_height;
       env.particles.iteration_count = hyperparams.iteration_count;
-
-      env.particles.ics = this.env.ics[model];
-
-      // Pad out the array so chunks of 4 can always be used as uniforms
-      while (env.particles.ics.length % 4 !== 0) {
-        env.particles.ics.push(0);
-      }
-
-      // Pad out even further in the case where textures are packed and chunks of 8 are used as
-      // uniforms
-      if (this.env.particles.ics.length > 28) {
-        while (env.particles.ics.length % 8 !== 0) {
-          env.particles.ics.push(0);
-        }
-      }
     }
 
     normalizeData(parsed_data, normalization_max, normalization_min) {
@@ -470,6 +477,7 @@ define('scripts/pso', [
       const data_arrays = [];
       const align_thresh = [];
       const all_full_normalized_data = [];
+      this.env.simulation.ics = [];
 
       for (let i = 0; i < raw_input_data.length; ++i) {
         if (datatypes[i] === 'apd') {
@@ -515,6 +523,24 @@ define('scripts/pso', [
           align_thresh.push(curr_trimmed_data[0] - delta);
           all_full_normalized_data.push(full_normalized_data);
         }
+
+        // Set up the initial conditions for the data
+        const ics_obj = this.env.ics[this.env.simulation.model];
+        const ics_cls = Object.keys(ics_obj);
+        ics_cls.sort((a, b) => a - b);
+        let closest_cl = ics_cls.find(cl => input_cls[i] <= cl);
+        if (closest_cl === undefined) {
+          closest_cl = ics_cls[ics_cls.length-1];
+        }
+
+        const ics = ics_obj[closest_cl];
+
+        // Pad out the array so chunks of 4 can always be used as uniforms
+        while (ics.length % 4 !== 0) {
+          ics.push(0);
+        }
+
+        this.env.simulation.ics.push(ics);
       }
 
       this.env.simulation.data_arrays = data_arrays;
@@ -632,7 +658,16 @@ define('scripts/pso', [
       this.final_state_textures = [];
       this.state_out_textures = [];
       this.final_state_out_textures = [];
-      const num_state_textures = this.env.particles.ics.length <= 28 ? this.env.particles.ics.length/4 : this.env.particles.ics.length/8;
+
+      let num_state_textures;
+      if (this.env.simulation.model === 'ovvr') {
+        num_state_textures = 8;
+      } else if (this.env.simulation.model === 'ortp') {
+        num_state_textures = 7;
+      } else {
+        num_state_textures = this.env.simulation.ics[0].length/4;
+      }
+
       for (let i = 0; i < Math.floor(num_state_textures); ++i) {
         this.state_textures.push([]);
         this.state_out_textures.push([]);
@@ -808,7 +843,7 @@ define('scripts/pso', [
           vert: DefaultVertexShader,
           frag: SetIcsShader,
           uniforms: [
-            ['ics', '4fv_a', () => [this.env.particles.ics, num*4, 4]],
+            ['ics', '4fv_a', () => [this.env.simulation.ics[cl_idx], num*4, 4]],
           ],
           out: [final ? this.final_state_textures[num][cl_idx] : this.state_textures[num][cl_idx]],
           run: this.gl_helper.runProgram,
@@ -816,18 +851,120 @@ define('scripts/pso', [
         }
       };
 
-      const makePackedInitStateSolver = (num, cl_idx, final) => {
-        return {
+      const makeInitOrtpSolver = (cl_idx, final) => {
+        const solver = {
           vert: DefaultVertexShader,
-          frag: SetPackedIcsShader,
+          frag: InitOrtpShader,
           uniforms: [
-            ['ics_0', '4fv_a', () => [this.env.particles.ics, (2*num)*4, 4]],
-            ['ics_1', '4fv_a', () => [this.env.particles.ics, ((2*num)+1)*4, 4]],
+            ['V',           '1f', () => this.env.simulation.ics[cl_idx][0]],
+            ['Na_i',        '1f', () => this.env.simulation.ics[cl_idx][1]],
+            ['Na_ss',       '1f', () => this.env.simulation.ics[cl_idx][2]],
+            ['K_i',         '1f', () => this.env.simulation.ics[cl_idx][3]],
+            ['K_ss',        '1f', () => this.env.simulation.ics[cl_idx][4]],
+            ['Ca_i',        '1f', () => this.env.simulation.ics[cl_idx][5]],
+            ['Ca_ss',       '1f', () => this.env.simulation.ics[cl_idx][6]],
+            ['Ca_nsr',      '1f', () => this.env.simulation.ics[cl_idx][7]],
+            ['Ca_jsr',      '1f', () => this.env.simulation.ics[cl_idx][8]],
+            ['m',           '1f', () => this.env.simulation.ics[cl_idx][9]],
+            ['h',           '1f', () => this.env.simulation.ics[cl_idx][10]],
+            ['j',           '1f', () => this.env.simulation.ics[cl_idx][11]],
+            ['a',           '1f', () => this.env.simulation.ics[cl_idx][12]],
+            ['ifast',       '1f', () => this.env.simulation.ics[cl_idx][13]],
+            ['islow',       '1f', () => this.env.simulation.ics[cl_idx][14]],
+            ['aCaMK',       '1f', () => this.env.simulation.ics[cl_idx][15]],
+            ['iCaMKfast',   '1f', () => this.env.simulation.ics[cl_idx][16]],
+            ['iCaMKslow',   '1f', () => this.env.simulation.ics[cl_idx][17]],
+            ['d',           '1f', () => this.env.simulation.ics[cl_idx][18]],
+            ['ffast',       '1f', () => this.env.simulation.ics[cl_idx][19]],
+            ['fslow',       '1f', () => this.env.simulation.ics[cl_idx][20]],
+            ['fCafast',     '1f', () => this.env.simulation.ics[cl_idx][21]],
+            ['fCaslow',     '1f', () => this.env.simulation.ics[cl_idx][22]],
+            ['jCa',         '1f', () => this.env.simulation.ics[cl_idx][23]],
+            ['n',           '1f', () => this.env.simulation.ics[cl_idx][24]],
+            ['fCaMKfast',   '1f', () => this.env.simulation.ics[cl_idx][25]],
+            ['fCaCaMKfast', '1f', () => this.env.simulation.ics[cl_idx][26]],
+            ['xrfast',      '1f', () => this.env.simulation.ics[cl_idx][27]],
+            ['xrslow',      '1f', () => this.env.simulation.ics[cl_idx][28]],
+            ['xs1',         '1f', () => this.env.simulation.ics[cl_idx][29]],
+            ['xs2',         '1f', () => this.env.simulation.ics[cl_idx][30]],
+            ['xK1',         '1f', () => this.env.simulation.ics[cl_idx][31]],
+            ['JrelNP',      '1f', () => this.env.simulation.ics[cl_idx][32]],
+            ['JrelCaMK',    '1f', () => this.env.simulation.ics[cl_idx][33]],
+            ['CaMKtrap',    '1f', () => this.env.simulation.ics[cl_idx][34]],
           ],
-          out: [final ? this.final_state_textures[num][cl_idx] : this.state_textures[num][cl_idx]],
+          out: [],
           run: this.gl_helper.runProgram,
           dims: [final ? Math.max(...this.simulation_lengths) : this.particles_width, final ? 1 : this.particles_height],
         }
+
+        const out_textures = final ? this.final_state_textures : this.state_textures;
+
+        for (let i = 0; i < out_textures.length; ++i) {
+          solver.out.push(out_textures[i][cl_idx]);
+        }
+
+        return solver;
+      };
+
+      const makeInitOvvrSolver = (cl_idx, final) => {
+        const solver = {
+          vert: DefaultVertexShader,
+          frag: InitOvvrShader,
+          uniforms: [
+            ['V',           '1f', () => this.env.simulation.ics[cl_idx][0]],
+            ['Na_i',        '1f', () => this.env.simulation.ics[cl_idx][1]],
+            ['Na_ss',       '1f', () => this.env.simulation.ics[cl_idx][2]],
+            ['K_i',         '1f', () => this.env.simulation.ics[cl_idx][3]],
+            ['K_ss',        '1f', () => this.env.simulation.ics[cl_idx][4]],
+            ['Ca_i',        '1f', () => this.env.simulation.ics[cl_idx][5]],
+            ['Ca_ss',       '1f', () => this.env.simulation.ics[cl_idx][6]],
+            ['Ca_nsr',      '1f', () => this.env.simulation.ics[cl_idx][7]],
+            ['Ca_jsr',      '1f', () => this.env.simulation.ics[cl_idx][8]],
+            ['m',           '1f', () => this.env.simulation.ics[cl_idx][9]],
+            ['hfast',       '1f', () => this.env.simulation.ics[cl_idx][10]],
+            ['hslow',       '1f', () => this.env.simulation.ics[cl_idx][11]],
+            ['j',           '1f', () => this.env.simulation.ics[cl_idx][12]],
+            ['hCaMKslow',   '1f', () => this.env.simulation.ics[cl_idx][13]],
+            ['jCaMK',       '1f', () => this.env.simulation.ics[cl_idx][14]],
+            ['mL',          '1f', () => this.env.simulation.ics[cl_idx][15]],
+            ['hL',          '1f', () => this.env.simulation.ics[cl_idx][16]],
+            ['hLCaMK',      '1f', () => this.env.simulation.ics[cl_idx][17]],
+            ['a',           '1f', () => this.env.simulation.ics[cl_idx][18]],
+            ['ifast',       '1f', () => this.env.simulation.ics[cl_idx][19]],
+            ['islow',       '1f', () => this.env.simulation.ics[cl_idx][20]],
+            ['aCaMK',       '1f', () => this.env.simulation.ics[cl_idx][21]],
+            ['iCaMKfast',   '1f', () => this.env.simulation.ics[cl_idx][22]],
+            ['iCaMKslow',   '1f', () => this.env.simulation.ics[cl_idx][23]],
+            ['d',           '1f', () => this.env.simulation.ics[cl_idx][24]],
+            ['ffast',       '1f', () => this.env.simulation.ics[cl_idx][25]],
+            ['fslow',       '1f', () => this.env.simulation.ics[cl_idx][26]],
+            ['fCafast',     '1f', () => this.env.simulation.ics[cl_idx][27]],
+            ['fCaslow',     '1f', () => this.env.simulation.ics[cl_idx][28]],
+            ['jCa',         '1f', () => this.env.simulation.ics[cl_idx][29]],
+            ['n',           '1f', () => this.env.simulation.ics[cl_idx][30]],
+            ['fCaMKfast',   '1f', () => this.env.simulation.ics[cl_idx][31]],
+            ['fCaCaMKfast', '1f', () => this.env.simulation.ics[cl_idx][32]],
+            ['xrfast',      '1f', () => this.env.simulation.ics[cl_idx][33]],
+            ['xrslow',      '1f', () => this.env.simulation.ics[cl_idx][34]],
+            ['xs1',         '1f', () => this.env.simulation.ics[cl_idx][35]],
+            ['xs2',         '1f', () => this.env.simulation.ics[cl_idx][36]],
+            ['xK1',         '1f', () => this.env.simulation.ics[cl_idx][37]],
+            ['JrelNP',      '1f', () => this.env.simulation.ics[cl_idx][38]],
+            ['JrelCaMK',    '1f', () => this.env.simulation.ics[cl_idx][39]],
+            ['CaMKtrap',    '1f', () => this.env.simulation.ics[cl_idx][40]],
+          ],
+          out: [],
+          run: this.gl_helper.runProgram,
+          dims: [final ? Math.max(...this.simulation_lengths) : this.particles_width, final ? 1 : this.particles_height],
+        }
+
+        const out_textures = final ? this.final_state_textures : this.state_textures;
+
+        for (let i = 0; i < out_textures.length; ++i) {
+          solver.out.push(out_textures[i][cl_idx]);
+        }
+
+        return solver;
       };
 
       const model_shader_map = {
@@ -843,7 +980,7 @@ define('scripts/pso', [
         'ap': APShader,
       };
 
-      const makeRunSimulationSolver = (final, normalize) => {
+      const makeRunSimulationSolver = (final, prepace, normalize) => {
         const solver = {
           vert: DefaultVertexShader,
           frag: model_shader_map[this.env.simulation.model],
@@ -858,7 +995,7 @@ define('scripts/pso', [
             ['stim_offset_2', '1f', () => this.env.stimulus.stim_offset_2],
             ['stim_t_scale', '1f', () => this.env.stimulus.stim_t_scale],
             ['num_beats', '1i', () => this.env.simulation.num_beats],
-            ['prepacing', '1i', () => this.prepacing],
+            ['prepacing', '1i', () => prepace],
             ['align_thresh', '1f', (cl_idx) => this.env.simulation.align_thresh[cl_idx]],
             ['sample_interval', '1f', () => this.env.simulation.sample_interval],
             ['data_type', '1i', (cl_idx) => Pso.data_type_map[this.env.simulation.datatypes[cl_idx]]],
@@ -868,7 +1005,7 @@ define('scripts/pso', [
             ['normalizing', '1i', () => normalize],
             ['auto_normalize', '1i', () => this.env.simulation.auto_normalize],
           ],
-          out: [final ? this.simulation_texture : this.error_texture],
+          out: [],
           run: final ? this.gl_helper.runFinal : this.gl_helper.runSimulation,
         };
 
@@ -880,19 +1017,35 @@ define('scripts/pso', [
           }
         }
 
+        if (prepace) {
+          if (final) {
+            solver.out.push((cl_idx) => this.final_state_out_textures[0][cl_idx]);
+          } else {
+            solver.out.push((cl_idx) => this.state_out_textures[0][cl_idx]);
+          }
+        } else if (normalize) {
+          if (final) {
+            solver.out.push((cl_idx) => this.final_normalize_textures[cl_idx]);
+          } else {
+            solver.out.push((cl_idx) => this.normalize_textures[cl_idx]);
+          }
+        } else {
+          if (final) {
+            solver.out.push(this.simulation_texture);
+          } else {
+            solver.out.push(this.error_texture);
+          }
+        }
+
         for (let i = 0; i < this.state_textures.length; ++i) {
           if (final) {
             solver.uniforms.push(['state_textures_' + i, 'tex', (cl_idx) => this.final_state_textures[i][cl_idx]]);
-            if (normalize && i === 0) {
-              solver.out.push((cl_idx) => this.final_normalize_textures[cl_idx]);
-            } else {
+            if (i > 0) {
               solver.out.push((cl_idx) => this.final_state_out_textures[i][cl_idx]);
             }
           } else {
             solver.uniforms.push(['state_textures_' + i, 'tex', (cl_idx) => this.state_textures[i][cl_idx]]);
-            if (normalize && i === 0) {
-              solver.out.push((cl_idx) => this.normalize_textures[cl_idx]);
-            } else {
+            if (i > 0) {
               solver.out.push((cl_idx) => this.state_out_textures[i][cl_idx]);
             }
           }
@@ -924,11 +1077,14 @@ define('scripts/pso', [
       };
 
       const shader_map = {
-        run_simulation: makeRunSimulationSolver(false, false),
-        run_final_simulation: makeRunSimulationSolver(true, false),
+        run_simulation: makeRunSimulationSolver(false, false, false),
+        run_final_simulation: makeRunSimulationSolver(true, false, false),
 
-        run_simulation_normalize: makeRunSimulationSolver(false, true),
-        run_final_simulation_normalize: makeRunSimulationSolver(true, true),
+        run_simulation_prepace: makeRunSimulationSolver(false, true, false),
+        run_final_simulation_prepace: makeRunSimulationSolver(true, true, false),
+
+        run_simulation_normalize: makeRunSimulationSolver(false, false, true),
+        run_final_simulation_normalize: makeRunSimulationSolver(true, false, true),
 
         reduce_error_1: {
           vert: DefaultVertexShader,
@@ -1068,10 +1224,22 @@ define('scripts/pso', [
         }
       }
 
-      for (let i = 0; i < this.state_textures.length; ++i) {
+      if (this.env.simulation.model === 'ovvr') {
         for (let j = 0; j < this.env.simulation.period.length; ++j) {
-          shader_map['state_textures_init_' + i + '_' + j] = this.env.particles.ics.length <= 28 ? makeInitStateSolver(i, j, false) : makePackedInitStateSolver(i, j, false);
-          shader_map['final_state_textures_init_' + i + '_' + j] = this.env.particles.ics.length <= 28 ? makeInitStateSolver(i, j, true) : makePackedInitStateSolver(i, j, true);
+          shader_map['state_textures_init_' + j] = makeInitOvvrSolver(j, false);
+          shader_map['final_state_textures_init_' + j] = makeInitOvvrSolver(j, true);
+        }
+      } else if (this.env.simulation.model === 'ortp') {
+        for (let j = 0; j < this.env.simulation.period.length; ++j) {
+          shader_map['state_textures_init_' + j] = makeInitOrtpSolver(j, false);
+          shader_map['final_state_textures_init_' + j] = makeInitOrtpSolver(j, true);
+        }
+      } else {
+        for (let i = 0; i < this.state_textures.length; ++i) {
+          for (let j = 0; j < this.env.simulation.period.length; ++j) {
+            shader_map['state_textures_init_' + i + '_' + j] = makeInitStateSolver(i, j, false);
+            shader_map['final_state_textures_init_' + i + '_' + j] = makeInitStateSolver(i, j, true);
+          }
         }
       }
 
@@ -1098,10 +1266,11 @@ define('scripts/pso', [
       this.gl_helper.getFloatTextureArray(this.best_error_value_texture, 2, 2, out_array);
       env.particles.best_error_value = out_array[0];
 
-      env.particles.global_bests = [];
       for (let t = 0; t < this.particles_textures.length; ++t) {
         this.gl_helper.getFloatTextureArray(this.global_best_textures[t], 2, 2, out_array);
-        env.particles.global_bests.push(...out_array);
+        for (let i = 0; i < out_array.length; ++i) {
+          env.particles.global_bests[out_array.length*t+i] = out_array[i];
+        }
       }
     }
 
@@ -1160,12 +1329,17 @@ define('scripts/pso', [
       const program_map = this.program_map;
       const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
 
-      this.prepacing = true;
-
-      for (let i = 0; i < this.state_textures.length; ++i) {
-        for (let j = 0; j < this.env.simulation.period.length; ++j) {
-          await nextframe();
-          program_map['state_textures_init_' + i + '_' + j]();
+      if (this.env.simulation.model === 'ovvr' || this.env.simulation.model === 'ortp') {
+          for (let j = 0; j < this.env.simulation.period.length; ++j) {
+            await nextframe();
+            program_map['state_textures_init_' + j]();
+          }
+      } else {
+        for (let i = 0; i < this.state_textures.length; ++i) {
+          for (let j = 0; j < this.env.simulation.period.length; ++j) {
+            await nextframe();
+            program_map['state_textures_init_' + i + '_' + j]();
+          }
         }
       }
 
@@ -1175,7 +1349,7 @@ define('scripts/pso', [
           // The second argument disables clearing the output textures (only necessary for the
           // blending) and the third argument disables texture blending, which is needed for the
           // error accumulation but will not work for storing the state.
-          program_map.run_simulation(i, false, true);
+          program_map.run_simulation_prepace(i, false, true);
         }
 
         for (let i = 0; i < this.state_textures.length; ++i) {
@@ -1192,8 +1366,6 @@ define('scripts/pso', [
       const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
 
       await this.runPrepacingIterations();
-
-      this.prepacing = false;
 
       if (this.env.simulation.auto_normalize) {
         for (let i = 0; i < this.env.simulation.period.length; ++i) {
@@ -1293,16 +1465,19 @@ define('scripts/pso', [
       const program_map = this.program_map;
       const nextframe = () => new Promise(resolve => requestAnimationFrame(resolve));
 
-      this.prepacing = true;
-
-      for (let i = 0; i < this.state_textures.length; ++i) {
-        await nextframe();
-        program_map['final_state_textures_init_' + i + '_' + cl_idx]();
+      if (this.env.simulation.model === 'ovvr' || this.env.simulation.model === 'ortp') {
+          await nextframe();
+          program_map['final_state_textures_init_' + cl_idx]();
+      } else {
+        for (let i = 0; i < this.state_textures.length; ++i) {
+          await nextframe();
+          program_map['final_state_textures_init_' + i + '_' + cl_idx]();
+        }
       }
 
       for (let ppb = 0; ppb < this.env.simulation.pre_beats; ++ppb) {
         await nextframe();
-        program_map.run_final_simulation(cl_idx, Math.max(...this.simulation_lengths));
+        program_map.run_final_simulation_prepace(cl_idx, Math.max(...this.simulation_lengths));
 
         for (let i = 0; i < this.state_textures.length; ++i) {
           await nextframe();
@@ -1317,6 +1492,8 @@ define('scripts/pso', [
 
       const parameter_values = values || this.env.particles.global_bests;
 
+      // In the case of the global_bests array, it should already have length divisible by 16, since
+      // it is a Float32Array and cannot be pushed to.
       while (parameter_values.length % 16 !== 0) {
         parameter_values.push(0);
       }
@@ -1324,7 +1501,6 @@ define('scripts/pso', [
       this.setFinalPosition(simsize, parameter_values);
 
       await this.runFinalPrepacingIterations(cl_idx);
-      this.prepacing = false;
 
       if (this.env.simulation.auto_normalize) {
         await this.program_map.run_final_simulation_normalize(cl_idx, Math.max(...this.simulation_lengths));

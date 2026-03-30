@@ -11,11 +11,14 @@ layout (location = 1) out vec4 new_local_best_error;
 in vec2 cc;
 
 void main() {
-    vec4 cur_error = texture(cur_error_texture, cc);
-    vec4 local_best_error = texture(local_bests_error_texture, cc);
+    ivec2 dims = textureSize(cur_error_texture, 0);
+    ivec2 idx = ivec2(floor(cc * vec2(dims)));
 
-    vec4 local_bests = texture(local_bests_texture, cc);
-    vec4 cur_vals = texture(cur_vals_texture, cc);
+    vec4 cur_error = texelFetch(cur_error_texture, idx, 0);
+    vec4 local_best_error = texelFetch(local_bests_error_texture, idx, 0);
+
+    vec4 local_bests = texelFetch(local_bests_texture, idx, 0);
+    vec4 cur_vals = texelFetch(cur_vals_texture, idx, 0);
 
     if (cur_error.r < local_best_error.r) {
         new_local_best = cur_vals;

@@ -11,11 +11,10 @@ uniform sampler2D state_textures_0, state_textures_1, state_textures_2, state_te
 uniform sampler2D normalize_texture;
 
 layout (location = 0) out vec4 error_texture;
-layout (location = 1) out vec4 state_out_texture_0;
-layout (location = 2) out vec4 state_out_texture_1;
-layout (location = 3) out vec4 state_out_texture_2;
-layout (location = 4) out vec4 state_out_texture_3;
-layout (location = 5) out vec4 state_out_texture_4;
+layout (location = 1) out vec4 state_out_texture_1;
+layout (location = 2) out vec4 state_out_texture_2;
+layout (location = 3) out vec4 state_out_texture_3;
+layout (location = 4) out vec4 state_out_texture_4;
 
 in vec2 cc;
 
@@ -303,7 +302,7 @@ void main() {
          */
 
         stim = 0.0;
-        stim_t = mod(float(step_count)*dt, period);
+        stim_t = mod(float(step_count-1)*dt, period);
         if (stim_t < stim_dur) {
             if (stim_biphasic) {
                 stim = biphasic_stim_f(stim_t);
@@ -518,12 +517,12 @@ void main() {
     Ki = Kibase + Kidiff;
     Nai = Naibase + Naidiff;
 
-    error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
-
-    if (normalizing) {
-        state_out_texture_0 = vec4(minu, maxu, 0.0, 0.0);
+    if (prepacing) {
+        error_texture = vec4(V, Rhat, Nai, Ki);
+    } else if (normalizing) {
+        error_texture = vec4(minu, maxu, 0.0, 0.0);
     } else {
-        state_out_texture_0 = vec4(V, Rhat, Nai, Ki);
+        error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
     }
 
     state_out_texture_1 = vec4(Cai, CaSS, CaSR, m);

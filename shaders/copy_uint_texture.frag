@@ -11,5 +11,7 @@ in vec2 cc;
 layout (location = 0) out uvec4 copy;
 
 void main() {
-    copy = texture(original, cc);
+    ivec2 tex_size = textureSize(original, 0);
+    ivec2 idx = ivec2(floor(cc * vec2(tex_size)));
+    copy = texelFetch(original, idx, 0);
 }

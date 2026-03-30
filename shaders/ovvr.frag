@@ -4,16 +4,17 @@ precision highp float;
 precision highp int;
 
 uniform sampler2D in_particles_1, in_particles_2, data_texture;
-uniform sampler2D state_textures_0, state_textures_1, state_textures_2, state_textures_3, state_textures_4, state_textures_5;
+uniform sampler2D state_textures_0, state_textures_1, state_textures_2, state_textures_3, state_textures_4, state_textures_5, state_textures_6, state_textures_7;
 uniform sampler2D normalize_texture;
 
 layout (location = 0) out vec4 error_texture;
-layout (location = 1) out vec4 state_out_texture_0;
-layout (location = 2) out vec4 state_out_texture_1;
-layout (location = 3) out vec4 state_out_texture_2;
-layout (location = 4) out vec4 state_out_texture_3;
-layout (location = 5) out vec4 state_out_texture_4;
-layout (location = 6) out vec4 state_out_texture_5;
+layout (location = 1) out vec4 state_out_texture_1;
+layout (location = 2) out vec4 state_out_texture_2;
+layout (location = 3) out vec4 state_out_texture_3;
+layout (location = 4) out vec4 state_out_texture_4;
+layout (location = 5) out vec4 state_out_texture_5;
+layout (location = 6) out vec4 state_out_texture_6;
+layout (location = 7) out vec4 state_out_texture_7;
 
 in vec2 cc;
 
@@ -228,7 +229,7 @@ void main() {
     int num_steps = int(ceil(endtime/dt));
 
     ivec2 tex_size = textureSize(in_particles_1, 0);
-    ivec2 idx = ivec2(floor(cc * 0.5 * vec2(tex_size)));
+    ivec2 idx = ivec2(floor(cc * vec2(tex_size/2)));
 
     int num_data_points = textureSize(data_texture, 0).x;
 
@@ -265,6 +266,40 @@ void main() {
 
     float GKbbar = particles_5[0];
     float GpCabar = particles_5[1];
+
+    // Problem
+    // GKrbar     = 0.028930267319083214;
+    // GK1bar     = 0.2827710211277008;
+    // GNaKbar    = 39.12760925292969;
+
+    // TODO remove
+    // GNafastbar = 129.40371704101562;
+    // GNalatebar = 0.007744332309812307;
+    // Gtobar     = 0.025889599695801735;
+    // PCa        = 0.00005450226672110148;
+    // PCaNa      = 1.582629209906372e-7;
+    // PCaK       = 6.074812830547671e-8;
+    // PCaCaMK    = 0.00010538144852034748;
+    // PCaNaCaMK  = 1.4562455419309117e-7;
+    // PCaKCaMK   = 5.1735945305608766e-8;
+
+    // Problem
+    // GKrbar     = 0.028930267319083214;
+
+    // GKsbar     = 0.0030572263058274984;
+
+    // Problem
+    // GK1bar     = 0.2827710211277008;
+
+    // GNaCabar   = 0.001538076321594417;
+
+    // Problem
+    // GNaKbar    = 39.12760925292969;
+
+    // PNab       = 5.102352984565073e-10;
+    // PCab       = 3.937519821306523e-8;
+    // GKbbar     = 0.002562799723818898;
+    // GpCabar    = 0.0005523095023818314;
 
     float INa, Ito, ICaL, ICaNa, ICaK, IKr, IKs, IK1, INaCai, INaCass, INaCa, INaK, INab, ICab, IKb, IpCa;
     float Istim;
@@ -322,6 +357,8 @@ void main() {
     float K_ss_base, K_ss_diff;
     float Na_i_base, Na_i_diff;
     float Na_ss_base, Na_ss_diff;
+    float Ca_nsr_base, Ca_nsr_diff;
+    float Ca_jsr_base, Ca_jsr_diff;
 
     // Initialize values for the simulation
     ivec2 state_size = textureSize(state_textures_0, 0);
@@ -333,89 +370,82 @@ void main() {
     vec4 state_3 = texelFetch(state_textures_3, state_idx, 0);
     vec4 state_4 = texelFetch(state_textures_4, state_idx, 0);
     vec4 state_5 = texelFetch(state_textures_5, state_idx, 0);
+    vec4 state_6 = texelFetch(state_textures_6, state_idx, 0);
+    vec4 state_7 = texelFetch(state_textures_7, state_idx, 0);
 
-    vec2 unpacked_0 = unpackHalf2x16(floatBitsToUint(state_0[0]));
-    vec2 unpacked_1 = unpackHalf2x16(floatBitsToUint(state_0[1]));
-    vec2 unpacked_2 = unpackHalf2x16(floatBitsToUint(state_0[2]));
-    vec2 unpacked_3 = unpackHalf2x16(floatBitsToUint(state_0[3]));
+    vec2 unpacked_0, unpacked_1, unpacked_2, unpacked_3;
 
-    V      = unpacked_0[0];
-    Na_i   = unpacked_0[1];
-    Na_ss  = unpacked_1[0];
-    K_i    = unpacked_1[1];
-    K_ss   = unpacked_2[0];
-    Ca_i   = unpacked_2[1];
-    Ca_ss  = unpacked_3[0];
-    Ca_nsr = unpacked_3[1];
+    V          = state_0[0];
+    Na_i_base  = state_0[1];
+    Na_ss_base = state_0[2];
+    K_i_base   = state_0[3];
 
-    unpacked_0 = unpackHalf2x16(floatBitsToUint(state_1[0]));
-    unpacked_1 = unpackHalf2x16(floatBitsToUint(state_1[1]));
-    unpacked_2 = unpackHalf2x16(floatBitsToUint(state_1[2]));
-    unpacked_3 = unpackHalf2x16(floatBitsToUint(state_1[3]));
+    K_ss_base   = state_1[0];
+    Ca_i        = state_1[1];
+    Ca_ss       = state_1[2];
+    Ca_nsr_base = state_1[3];
 
-    Ca_jsr    = unpacked_0[0];
-    m         = unpacked_0[1];
-    hfast     = unpacked_1[0];
-    hslow     = unpacked_1[1];
-    j         = unpacked_2[0];
-    hCaMKslow = unpacked_2[1];
-    jCaMK     = unpacked_3[0];
-    mL        = unpacked_3[1];
+    Ca_jsr_base = state_2[0];
+    hLCaMK      = state_2[1];
+    fslow       = state_2[2];
+    xrfast      = state_2[3];
 
-    unpacked_0 = unpackHalf2x16(floatBitsToUint(state_2[0]));
-    unpacked_1 = unpackHalf2x16(floatBitsToUint(state_2[1]));
-    unpacked_2 = unpackHalf2x16(floatBitsToUint(state_2[2]));
-    unpacked_3 = unpackHalf2x16(floatBitsToUint(state_2[3]));
-
-    hL        = unpacked_0[0];
-    hLCaMK    = unpacked_0[1];
-    a         = unpacked_1[0];
-    ifast     = unpacked_1[1];
-    islow     = unpacked_2[0];
-    aCaMK     = unpacked_2[1];
-    iCaMKfast = unpacked_3[0];
-    iCaMKslow = unpacked_3[1];
-
-    unpacked_0 = unpackHalf2x16(floatBitsToUint(state_3[0]));
-    unpacked_1 = unpackHalf2x16(floatBitsToUint(state_3[1]));
-    unpacked_2 = unpackHalf2x16(floatBitsToUint(state_3[2]));
-    unpacked_3 = unpackHalf2x16(floatBitsToUint(state_3[3]));
-
-    d         = unpacked_0[0];
-    ffast     = unpacked_0[1];
-    fslow     = unpacked_1[0];
-    fCafast   = unpacked_1[1];
-    fCaslow   = unpacked_2[0];
-    jCa       = unpacked_2[1];
-    n         = unpacked_3[0];
-    fCaMKfast = unpacked_3[1];
+    xrslow   = state_3[0];
+    xs1      = state_3[1];
+    xK1      = state_3[2];
+    CaMKtrap = state_3[3];
 
     unpacked_0 = unpackHalf2x16(floatBitsToUint(state_4[0]));
     unpacked_1 = unpackHalf2x16(floatBitsToUint(state_4[1]));
     unpacked_2 = unpackHalf2x16(floatBitsToUint(state_4[2]));
     unpacked_3 = unpackHalf2x16(floatBitsToUint(state_4[3]));
 
-    fCaCaMKfast = unpacked_0[0];
-    xrfast      = unpacked_0[1];
-    xrslow      = unpacked_1[0];
-    xs1         = unpacked_1[1];
-    xs2         = unpacked_2[0];
-    xK1         = unpacked_2[1];
-    JrelNP      = unpacked_3[0];
-    JrelCaMK    = unpacked_3[1];
+    fCafast  = unpacked_0[0];
+    j        = unpacked_0[1];
+    jCaMK    = state_4[1];
+    mL       = unpacked_2[0];
+    JrelCaMK = unpacked_2[1];
+    a        = unpacked_3[0];
+    ifast    = unpacked_3[1];
 
     unpacked_0 = unpackHalf2x16(floatBitsToUint(state_5[0]));
+    unpacked_1 = unpackHalf2x16(floatBitsToUint(state_5[1]));
+    unpacked_2 = unpackHalf2x16(floatBitsToUint(state_5[2]));
+    unpacked_3 = unpackHalf2x16(floatBitsToUint(state_5[3]));
 
-    CaMKtrap = unpacked_0[0];
+    islow     = unpacked_0[0];
+    aCaMK     = unpacked_0[1];
+    iCaMKfast = unpacked_1[0];
+    iCaMKslow = unpacked_1[1];
+    d         = unpacked_2[0];
+    ffast     = unpacked_2[1];
+    jCa       = unpacked_3[0];
+    n         = unpacked_3[1];
 
-    Na_i_base = Na_i;
+    unpacked_0 = unpackHalf2x16(floatBitsToUint(state_6[0]));
+    unpacked_1 = unpackHalf2x16(floatBitsToUint(state_6[1]));
+
+    fCaMKfast   = unpacked_0[0];
+    fCaCaMKfast = unpacked_0[1];
+    xs2         = unpacked_1[0];
+    JrelNP      = unpacked_1[1];
+
+    hslow = state_6[2];
+    hCaMKslow = state_6[3];
+
+    hfast = state_7[0];
+    hL = state_7[1];
+    fCaslow = state_7[2];
+    m = state_7[3];
+
     Na_i_diff = 0.0;
-    Na_ss_base = Na_ss;
     Na_ss_diff = 0.0;
-    K_i_base = K_i;
     K_i_diff = 0.0;
-    K_ss_base = K_ss;
     K_ss_diff = 0.0;
+    Ca_nsr_diff = 0.0;
+    Ca_jsr_diff = 0.0;
+
+    float test_init = V;
 
     float compare_stride = round(sample_interval / dt);
 
@@ -553,7 +583,7 @@ void main() {
          */
 
         stim = 0.0;
-        stim_t = mod(float(step_count)*dt, period);
+        stim_t = mod(float(step_count-1)*dt, period);
         if (stim_t < stim_dur) {
             if (stim_biphasic) {
                 stim = biphasic_stim_f(stim_t);
@@ -564,12 +594,12 @@ void main() {
 
         Istim = stim;
 
-        if (abs(K_i_diff) > 0.1) {
+        if (abs(K_i_diff) > 1.0) {
             K_i_base = K_i_base + K_i_diff;
             K_i_diff = 0.0;
         }
 
-        if (abs(K_ss_diff) > 0.1) {
+        if (abs(K_ss_diff) > 1.0) {
             K_ss_base = K_ss_base + K_ss_diff;
             K_ss_diff = 0.0;
         }
@@ -584,10 +614,22 @@ void main() {
             Na_ss_diff = 0.0;
         }
 
+        if (abs(Ca_nsr_diff) > 0.1) {
+            Ca_nsr_base = Ca_nsr_base + Ca_nsr_diff;
+            Ca_nsr_diff = 0.0;
+        }
+
+        if (abs(Ca_jsr_diff) > 0.1) {
+            Ca_jsr_base = Ca_jsr_base + Ca_jsr_diff;
+            Ca_jsr_diff = 0.0;
+        }
+
         K_i = K_i_base + K_i_diff;
         K_ss = K_ss_base + K_ss_diff;
         Na_i = Na_i_base + Na_i_diff;
         Na_ss = Na_ss_base + Na_ss_diff;
+        Ca_nsr = Ca_nsr_base + Ca_nsr_diff;
+        Ca_jsr = Ca_jsr_base + Ca_jsr_diff;
 
         //
         // Calcium/calmodulin-dependent protein kinase (CaMK)
@@ -973,12 +1015,12 @@ void main() {
         betaCass_inv = 1.0 + bsrkmbsr/bc1 + bslkmbsl/bc2;
         Ca_ss = Ca_ss + dt * ((-(ICaL - 2.0 * INaCass) * acapo2fvss + Jrel * vjsrovss - JdiffCa) / betaCass_inv);
 
-        Ca_nsr = Ca_nsr + dt * (Jup - Jtr * vjsrovnsr);
+        Ca_nsr_diff = Ca_nsr_diff + dt * (Jup - Jtr * vjsrovnsr);
 
         bc1 = KmCSQN+Ca_jsr;
         bc1 = bc1*bc1;
         betaCajsr_inv = 1.0 + csqnkmcsqn/bc1;
-        Ca_jsr = Ca_jsr + dt * ((Jtr - Jrel) / betaCajsr_inv);
+        Ca_jsr_diff = Ca_jsr_diff + dt * ((Jtr - Jrel) / betaCajsr_inv);
 
         maxu = max(u, maxu);
         minu = min(u, minu);
@@ -1038,6 +1080,9 @@ void main() {
         // Save time series data for plotting
         if (float(step_count - 1) / float(num_steps - 1) <= cc.x) {
             saved_value = u;
+            // saved_value = Ca_i;
+            // m, hfast, hslow, j, hCaMKslow, jCaMK, islow, iCaMKslow, jCa, fCaMKfast, xs2
+            // mL, a, ifast, aCaMK, iCaMKfast, d, ffast, fCafast, n, fCaCaMKfast, JrelNP, JrelCaMK
         }
     }
 
@@ -1077,47 +1122,46 @@ void main() {
     K_ss = K_ss_base + K_ss_diff;
     Na_i = Na_i_base + Na_i_diff;
     Na_ss = Na_ss_base + Na_ss_diff;
+    Ca_nsr = Ca_nsr_base + Ca_nsr_diff;
+    Ca_jsr = Ca_jsr_base + Ca_jsr_diff;
 
-    error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
-
-    if (normalizing) {
-        state_out_texture_0 = vec4(minu, maxu, 0.0, 0.0);
+    if (prepacing) {
+        error_texture = vec4(V, Na_i, Na_ss, K_i);
+    } else if (normalizing) {
+        error_texture = vec4(minu, maxu, 0.0, 0.0);
     } else {
-        state_out_texture_0 = vec4(
-            uintBitsToFloat(packHalf2x16(vec2(V, Na_i))),
-            uintBitsToFloat(packHalf2x16(vec2(Na_ss, K_i))),
-            uintBitsToFloat(packHalf2x16(vec2(K_ss, Ca_i))),
-            uintBitsToFloat(packHalf2x16(vec2(Ca_ss, Ca_nsr)))
-        );
+        error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
     }
 
-    state_out_texture_1 = vec4(
-        uintBitsToFloat(packHalf2x16(vec2(Ca_jsr, m))),
-        uintBitsToFloat(packHalf2x16(vec2(hfast, hslow))),
-        uintBitsToFloat(packHalf2x16(vec2(j, hCaMKslow))),
-        uintBitsToFloat(packHalf2x16(vec2(jCaMK, mL)))
-    );
-
-    state_out_texture_2 = vec4(
-        uintBitsToFloat(packHalf2x16(vec2(hL, hLCaMK))),
-        uintBitsToFloat(packHalf2x16(vec2(a, ifast))),
-        uintBitsToFloat(packHalf2x16(vec2(islow, aCaMK))),
-        uintBitsToFloat(packHalf2x16(vec2(iCaMKfast, iCaMKslow)))
-    );
-
-    state_out_texture_3 = vec4(
-        uintBitsToFloat(packHalf2x16(vec2(d, ffast))),
-        uintBitsToFloat(packHalf2x16(vec2(fslow, fCafast))),
-        uintBitsToFloat(packHalf2x16(vec2(fCaslow, jCa))),
-        uintBitsToFloat(packHalf2x16(vec2(n, fCaMKfast)))
-    );
+    state_out_texture_1 = vec4(K_ss, Ca_i, Ca_ss, Ca_nsr);
+    state_out_texture_2 = vec4(Ca_jsr, hLCaMK, fslow, xrfast);
+    state_out_texture_3 = vec4(xrslow, xs1, xK1, CaMKtrap);
 
     state_out_texture_4 = vec4(
-        uintBitsToFloat(packHalf2x16(vec2(fCaCaMKfast, xrfast))),
-        uintBitsToFloat(packHalf2x16(vec2(xrslow, xs1))),
-        uintBitsToFloat(packHalf2x16(vec2(xs2, xK1))),
-        uintBitsToFloat(packHalf2x16(vec2(JrelNP, JrelCaMK)))
+        uintBitsToFloat(packHalf2x16(vec2(fCafast, j))),
+        jCaMK,
+        uintBitsToFloat(packHalf2x16(vec2(mL, JrelCaMK))),
+        uintBitsToFloat(packHalf2x16(vec2(a, ifast)))
     );
 
-    state_out_texture_5 = vec4(uintBitsToFloat(packHalf2x16(vec2(CaMKtrap, 0.0))), 0.0, 0.0, 0.0);
+    state_out_texture_5 = vec4(
+        uintBitsToFloat(packHalf2x16(vec2(islow, aCaMK))),
+        uintBitsToFloat(packHalf2x16(vec2(iCaMKfast, iCaMKslow))),
+        uintBitsToFloat(packHalf2x16(vec2(d, ffast))),
+        uintBitsToFloat(packHalf2x16(vec2(jCa, n)))
+    );
+
+    state_out_texture_6 = vec4(
+        uintBitsToFloat(packHalf2x16(vec2(fCaMKfast, fCaCaMKfast))),
+        uintBitsToFloat(packHalf2x16(vec2(xs2, JrelNP))),
+        hslow,
+        hCaMKslow
+    );
+
+    state_out_texture_7 = vec4(
+        hfast,
+        hL,
+        fCaslow,
+        m
+    );
 }

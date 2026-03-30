@@ -4,15 +4,16 @@ precision highp float;
 precision highp int;
 
 uniform sampler2D in_particles_1, in_particles_2, data_texture;
-uniform sampler2D state_textures_0, state_textures_1, state_textures_2, state_textures_3, state_textures_4;
+uniform sampler2D state_textures_0, state_textures_1, state_textures_2, state_textures_3, state_textures_4, state_textures_5, state_textures_6;
 uniform sampler2D normalize_texture;
 
 layout (location = 0) out vec4 error_texture;
-layout (location = 1) out vec4 state_out_texture_0;
-layout (location = 2) out vec4 state_out_texture_1;
-layout (location = 3) out vec4 state_out_texture_2;
-layout (location = 4) out vec4 state_out_texture_3;
-layout (location = 5) out vec4 state_out_texture_4;
+layout (location = 1) out vec4 state_out_texture_1;
+layout (location = 2) out vec4 state_out_texture_2;
+layout (location = 3) out vec4 state_out_texture_3;
+layout (location = 4) out vec4 state_out_texture_4;
+layout (location = 5) out vec4 state_out_texture_5;
+layout (location = 6) out vec4 state_out_texture_6;
 
 in vec2 cc;
 
@@ -320,69 +321,65 @@ void main() {
     vec4 state_2 = texelFetch(state_textures_2, state_idx, 0);
     vec4 state_3 = texelFetch(state_textures_3, state_idx, 0);
     vec4 state_4 = texelFetch(state_textures_4, state_idx, 0);
+    vec4 state_5 = texelFetch(state_textures_5, state_idx, 0);
+    vec4 state_6 = texelFetch(state_textures_6, state_idx, 0);
 
-    vec2 unpacked_0 = unpackHalf2x16(floatBitsToUint(state_0[0]));
-    vec2 unpacked_1 = unpackHalf2x16(floatBitsToUint(state_0[1]));
-    vec2 unpacked_2 = unpackHalf2x16(floatBitsToUint(state_0[2]));
-    vec2 unpacked_3 = unpackHalf2x16(floatBitsToUint(state_0[3]));
+    vec2 unpacked_0, unpacked_1, unpacked_2, unpacked_3;
 
-    V      = unpacked_0[0];
-    Na_i   = unpacked_0[1];
-    Na_ss  = unpacked_1[0];
-    K_i    = unpacked_1[1];
-    K_ss   = unpacked_2[0];
-    Ca_i   = unpacked_2[1];
-    Ca_ss  = unpacked_3[0];
-    Ca_nsr = unpacked_3[1];
+    V     = state_0[0];
+    Na_i  = state_0[1];
+    Na_ss = state_0[2];
+    K_i   = state_0[3];
 
-    unpacked_0 = unpackHalf2x16(floatBitsToUint(state_1[0]));
-    unpacked_1 = unpackHalf2x16(floatBitsToUint(state_1[1]));
-    unpacked_2 = unpackHalf2x16(floatBitsToUint(state_1[2]));
-    unpacked_3 = unpackHalf2x16(floatBitsToUint(state_1[3]));
+    K_ss   = state_1[0];
+    Ca_i   = state_1[1];
+    Ca_ss  = state_1[2];
+    Ca_nsr = state_1[3];
 
-    Ca_jsr = unpacked_0[0];
-    m      = unpacked_0[1];
-    h      = unpacked_1[0];
-    j      = unpacked_1[1];
-    a      = unpacked_2[0];
-    ifast  = unpacked_2[1];
-    islow  = unpacked_3[0];
-    aCaMK  = unpacked_3[1];
+    Ca_jsr = state_2[0];
+    fslow  = state_2[1];
+    xrfast = state_2[2];
+    xrslow = state_2[3];
 
-    unpacked_0 = unpackHalf2x16(floatBitsToUint(state_2[0]));
-    unpacked_1 = unpackHalf2x16(floatBitsToUint(state_2[1]));
-    unpacked_2 = unpackHalf2x16(floatBitsToUint(state_2[2]));
-    unpacked_3 = unpackHalf2x16(floatBitsToUint(state_2[3]));
-
-    iCaMKfast = unpacked_0[0];
-    iCaMKslow = unpacked_0[1];
-    d         = unpacked_1[0];
-    ffast     = unpacked_1[1];
-    fslow     = unpacked_2[0];
-    fCafast   = unpacked_2[1];
-    fCaslow   = unpacked_3[0];
-    jCa       = unpacked_3[1];
-
-    unpacked_0 = unpackHalf2x16(floatBitsToUint(state_3[0]));
-    unpacked_1 = unpackHalf2x16(floatBitsToUint(state_3[1]));
-    unpacked_2 = unpackHalf2x16(floatBitsToUint(state_3[2]));
-    unpacked_3 = unpackHalf2x16(floatBitsToUint(state_3[3]));
-
-    n           = unpacked_0[0];
-    fCaMKfast   = unpacked_0[1];
-    fCaCaMKfast = unpacked_1[0];
-    xrfast      = unpacked_1[1];
-    xrslow      = unpacked_2[0];
-    xs1         = unpacked_2[1];
-    xs2         = unpacked_3[0];
-    xK1         = unpacked_3[1];
+    xs1      = state_3[0];
+    xK1      = state_3[1];
+    CaMKtrap = state_3[2];
 
     unpacked_0 = unpackHalf2x16(floatBitsToUint(state_4[0]));
     unpacked_1 = unpackHalf2x16(floatBitsToUint(state_4[1]));
+    unpacked_2 = unpackHalf2x16(floatBitsToUint(state_4[2]));
+    unpacked_3 = unpackHalf2x16(floatBitsToUint(state_4[3]));
 
-    JrelNP   = unpacked_0[0];
-    JrelCaMK = unpacked_0[1];
-    CaMKtrap = unpacked_1[0];
+    m         = unpacked_0[0];
+    h         = unpacked_0[1];
+    j         = unpacked_1[0];
+    a         = unpacked_1[1];
+    ifast     = unpacked_2[0];
+    islow     = unpacked_2[1];
+    aCaMK     = unpacked_3[0];
+    iCaMKfast = unpacked_3[1];
+
+    unpacked_0 = unpackHalf2x16(floatBitsToUint(state_5[0]));
+    unpacked_1 = unpackHalf2x16(floatBitsToUint(state_5[1]));
+    unpacked_2 = unpackHalf2x16(floatBitsToUint(state_5[2]));
+    unpacked_3 = unpackHalf2x16(floatBitsToUint(state_5[3]));
+
+    iCaMKslow = unpacked_0[0];
+    d         = unpacked_0[1];
+    ffast     = unpacked_1[0];
+    fCafast   = unpacked_1[1];
+    fCaslow   = unpacked_2[0];
+    jCa       = unpacked_2[1];
+    n         = unpacked_3[0];
+    fCaMKfast = unpacked_3[1];
+
+    unpacked_0 = unpackHalf2x16(floatBitsToUint(state_6[0]));
+    unpacked_1 = unpackHalf2x16(floatBitsToUint(state_6[1]));
+
+    fCaCaMKfast = unpacked_0[0];
+    xs2         = unpacked_0[1];
+    JrelNP      = unpacked_1[0];
+    JrelCaMK    = unpacked_1[1];
 
     Na_i_base = Na_i;
     Na_i_diff = 0.0;
@@ -525,7 +522,7 @@ void main() {
          */
 
         stim = 0.0;
-        stim_t = mod(float(step_count)*dt, period);
+        stim_t = mod(float(step_count-1)*dt, period);
         if (stim_t < stim_dur) {
             if (stim_biphasic) {
                 stim = biphasic_stim_f(stim_t);
@@ -1035,43 +1032,35 @@ void main() {
     Na_ss = Na_ss_base + Na_ss_diff;
     Ca_nsr = Ca_nsr_base + Ca_nsr_diff;
 
-    error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
-
-    if (normalizing) {
-        state_out_texture_0 = vec4(minu, maxu, 0.0, 0.0);
+    if (prepacing) {
+        error_texture = vec4(V, Na_i, Na_ss, K_i);
+    } else if (normalizing) {
+        error_texture = vec4(minu, maxu, 0.0, 0.0);
     } else {
-        state_out_texture_0 = vec4(
-            uintBitsToFloat(packHalf2x16(vec2(V, Na_i))),
-            uintBitsToFloat(packHalf2x16(vec2(Na_ss, K_i))),
-            uintBitsToFloat(packHalf2x16(vec2(K_ss, Ca_i))),
-            uintBitsToFloat(packHalf2x16(vec2(Ca_ss, Ca_nsr)))
-        );
+        error_texture = vec4(error, saved_value, 0, compared_points == 0 ? weight : weight / float(compared_points));
     }
 
-    state_out_texture_1 = vec4(
-        uintBitsToFloat(packHalf2x16(vec2(Ca_jsr, m))),
-        uintBitsToFloat(packHalf2x16(vec2(h, j))),
-        uintBitsToFloat(packHalf2x16(vec2(a, ifast))),
-        uintBitsToFloat(packHalf2x16(vec2(islow, aCaMK)))
-    );
-
-    state_out_texture_2 = vec4(
-        uintBitsToFloat(packHalf2x16(vec2(iCaMKfast, iCaMKslow))),
-        uintBitsToFloat(packHalf2x16(vec2(d, ffast))),
-        uintBitsToFloat(packHalf2x16(vec2(fslow, fCafast))),
-        uintBitsToFloat(packHalf2x16(vec2(fCaslow, jCa)))
-    );
-
-    state_out_texture_3 = vec4(
-        uintBitsToFloat(packHalf2x16(vec2(n, fCaMKfast))),
-        uintBitsToFloat(packHalf2x16(vec2(fCaCaMKfast, xrfast))),
-        uintBitsToFloat(packHalf2x16(vec2(xrslow, xs1))),
-        uintBitsToFloat(packHalf2x16(vec2(xs2, xK1)))
-    );
+    state_out_texture_1 = vec4(K_ss, Ca_i, Ca_ss, Ca_nsr);
+    state_out_texture_2 = vec4(Ca_jsr, fslow, xrfast, xrslow);
+    state_out_texture_3 = vec4(xs1, xK1, CaMKtrap, 0.0);
 
     state_out_texture_4 = vec4(
+        uintBitsToFloat(packHalf2x16(vec2(m, h))),
+        uintBitsToFloat(packHalf2x16(vec2(j, a))),
+        uintBitsToFloat(packHalf2x16(vec2(ifast, islow))),
+        uintBitsToFloat(packHalf2x16(vec2(aCaMK, iCaMKfast)))
+    );
+
+    state_out_texture_5 = vec4(
+        uintBitsToFloat(packHalf2x16(vec2(iCaMKslow, d))),
+        uintBitsToFloat(packHalf2x16(vec2(ffast, fCafast))),
+        uintBitsToFloat(packHalf2x16(vec2(fCaslow, jCa))),
+        uintBitsToFloat(packHalf2x16(vec2(n, fCaMKfast)))
+    );
+
+    state_out_texture_6 = vec4(
+        uintBitsToFloat(packHalf2x16(vec2(fCaCaMKfast, xs2))),
         uintBitsToFloat(packHalf2x16(vec2(JrelNP, JrelCaMK))),
-        uintBitsToFloat(packHalf2x16(vec2(CaMKtrap, 0.0))),
         0.0,
         0.0
     );

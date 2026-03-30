@@ -146,16 +146,20 @@ uint tinymtBinran(float p, uint npar){
 
 void main() {
     tinymtInit();
-    vec4 position = texture(positions_texture, cc);
-    vec4 velocity = texture(velocities_texture, cc);
-    vec4 best = texture(bests_texture, cc);
+
+    ivec2 tex_size = textureSize(positions_texture, 0);
+    ivec2 tex_idx = ivec2(floor(cc * vec2(tex_size)));
+
+    ivec2 texture_dims = textureSize(bests_texture, 0);
+    ivec2 my_texture_idx = ivec2(floor(cc*vec2(texture_dims)));
+
+    vec4 position = texelFetch(positions_texture, tex_idx, 0);
+    vec4 velocity = texelFetch(velocities_texture, tex_idx, 0);
+    vec4 best = texelFetch(bests_texture, my_texture_idx, 0);
 
     ivec2 particle_dims = textureSize(topological_best_idx_texture, 0);
     ivec2 my_particle_idx = ivec2(floor(cc*vec2(particle_dims)));
     ivec2 topological_best_idx = ivec2(texelFetch(topological_best_idx_texture, my_particle_idx, 0).xy);
-
-    ivec2 texture_dims = textureSize(bests_texture, 0);
-    ivec2 my_texture_idx = ivec2(floor(cc*vec2(texture_dims)));
 
     if (my_texture_idx.x >= particle_dims.x) topological_best_idx.x += particle_dims.x;
     if (my_texture_idx.y >= particle_dims.y) topological_best_idx.y += particle_dims.y;

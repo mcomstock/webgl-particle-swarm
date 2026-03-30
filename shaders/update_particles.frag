@@ -161,8 +161,11 @@ float bounds_check(float p_val, float p_min, float p_max) {
 
 void main() {
 	tinymtInit();
-    vec4 position = texture(positions_texture, cc);
-    vec4 velocity = texture(velocities_texture, cc);
+    ivec2 dims = textureSize(positions_texture, 0);
+    ivec2 tex_idx = ivec2(floor(cc * vec2(dims)));
+
+    vec4 position = texelFetch(positions_texture, tex_idx, 0);
+    vec4 velocity = texelFetch(velocities_texture, tex_idx, 0);
 
     int idx = 0;
     if (cc.x > 0.5) idx += 1;

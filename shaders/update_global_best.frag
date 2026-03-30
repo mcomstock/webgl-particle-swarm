@@ -21,7 +21,9 @@ void main() {
         global_best_out = texelFetch(positions_texture, global_best_idx, 0);
         best_error_value_out = vec4(re2.xyz, 0.0);
     } else {
-        global_best_out = texture(global_best_texture, cc);
+        ivec2 dims = textureSize(global_best_texture, 0);
+        ivec2 idx = ivec2(floor(cc * vec2(dims)));
+        global_best_out = texelFetch(global_best_texture, idx, 0);
         best_error_value_out = best_error;
     }
 }
