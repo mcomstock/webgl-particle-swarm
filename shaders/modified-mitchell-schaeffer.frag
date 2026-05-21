@@ -14,7 +14,7 @@ in vec2 cc;
 
 uniform float dt, period;
 uniform int num_beats, data_type, err_type;
-uniform float align_thresh, sample_interval, apd_thresh, weight;
+uniform float align_thresh, sample_interval, apd_thresh, weight, data_scale;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
 uniform bool prepacing, normalizing, auto_normalize;
 uniform bool stim_biphasic;
@@ -139,7 +139,13 @@ void main() {
                     APD_end = (x0*(y1 - apd_thresh) + x1*(apd_thresh - y0)) / (y1-y0);
                     float sim_APD = APD_end - APD_start;
                     float target_APD = texelFetch(data_texture, ivec2(data_index++, 0), 0).r;
-                    error += err_type == 1 ? abs(target_APD - sim_APD) : (target_APD - sim_APD) * (target_APD - sim_APD);
+                    if (err_type == 0) {
+                        error += (target_APD - sim_APD) * (target_APD - sim_APD);
+                    } else if (err_type == 1) {
+                        error += abs(target_APD - sim_APD);
+                    } else if (err_type == 2) {
+                        error += abs(target_APD - sim_APD) / target_APD;
+                    }
                     compared_points += 1;
                 }
             }
@@ -153,7 +159,13 @@ void main() {
                 // Measure curve error
                 if (first_align_upstroke && mod(float(step_count - start_comp), compare_stride) == 0.0) {
                     float actual = texelFetch(data_texture, ivec2(data_index++, 0), 0).r;
-                    error += err_type == 1 ? abs(normed_u - actual) : (normed_u - actual) * (normed_u - actual);
+                    if (err_type == 0) {
+                        error += (normed_u - actual) * (normed_u - actual);
+                    } else if (err_type == 1) {
+                        error += abs(normed_u - actual);
+                    } else if (err_type == 2) {
+                        error += abs((normed_u - actual) / data_scale);
+                    }
                     compared_points += 1;
                 }
             }

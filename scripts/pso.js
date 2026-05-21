@@ -101,6 +101,7 @@ define('scripts/pso', [
     static err_type_map = {
       'square': 0,
       'abs': 1,
+      'rel': 2,
     };
 
     static model_table_shader_map = {
@@ -127,6 +128,7 @@ define('scripts/pso', [
           apd_threshs: [],
           weights: [],
           full_normalized_data: [],
+          data_scale: [],
           sample_interval: 1.0,
           normalize: true,
           normalization_max: 1.0,
@@ -134,7 +136,7 @@ define('scripts/pso', [
           normalized_align_threshold: 0.15,
           normalized_ca_align_threshold: 0.15,
           auto_normalize: false,
-          err_type: 'abs',
+          err_type: 'rel',
           ics: [],
         },
         stimulus: {
@@ -330,14 +332,14 @@ define('scripts/pso', [
           ],
         ],
         tnnp2006_bounds: [
-          // GNa     GK1     Gto     GKr     GKs    GCaL     GpK     GpCa     GbNa     GbCa      pNaK   kNaCa
-          [  7.419,  2.7025, 0.0365, 0.0765, 0.196, 1.99e-5, 0.0073, 0.0619,  1.45e-4, 2.96e-4,  1.362, 500.0],
-          [  29.676, 10.81,  0.146, 0.306,   0.784, 7.96e-5, 0.0292, 0.2476,  5.8e-4,  0.001184, 5.448, 2000.0],
+          // GNa     GK1     Gto     GKr     GKs    GCaL     GpK     GpCa     GbNa     GbCa      pNaK   kNaCa   scaleCa  shiftCa  scaleV  shiftfV
+          [  7.419,  2.7025, 0.0365, 0.0765, 0.196, 1.99e-5, 0.0073, 0.0619,  1.45e-4, 2.96e-4,  1.362, 500.0,  0.5,     -0.001,  0.9,    -5.0],
+          [  29.676, 10.81,  0.146, 0.306,   0.784, 7.96e-5, 0.0292, 0.2476,  5.8e-4,  0.001184, 5.448, 2000.0, 2.0,      0.001,  1.1,     5.0],
         ],
         ovvr_bounds: [
-          // gnafast gnalate  gto   pca      pcana    pcak       pcacamk  pcanacamk pcakcamk   gkr    gks     gk1     gnaca   gnak  pnab       pcab     gkb     gpca
-          [  37.5,   0.00375, 0.01, 0.00005, 6.25e-8, 1.787e-8, 5.5e-5,  6.875e-8, 1.9657e-8, 0.023, 0.0017, 0.0954, 0.0004, 15.0, 1.875e-10, 1.25e-8, 0.0015, 0.00025],
-          [  150.0,  0.015,   0.04, 0.0002,  2.5e-7,  7.148e-8, 0.00022, 2.75e-7,  7.8628e-8, 0.092, 0.0068, 0.3816, 0.0016, 60.0, 7.5e-10,   5.0e-8,  0.006,  0.001],
+          // gnafast gnalate  gto   pca      pcana    pcak       pcacamk  pcanacamk pcakcamk   gkr    gks     gk1     gnaca   gnak  pnab       pcab     gkb     gpca    scaleCa  shiftCa  scaleV  shiftV
+          [  37.5,   0.00375, 0.01, 0.00005, 6.25e-8, 1.787e-8, 5.5e-5,  6.875e-8, 1.9657e-8, 0.023, 0.0017, 0.0954, 0.0004, 15.0, 1.875e-10, 1.25e-8, 0.0015, 0.00025, 0.5,     -0.001,  0.9,    -5.0],
+          [  150.0,  0.015,   0.04, 0.0002,  2.5e-7,  7.148e-8, 0.00022, 2.75e-7,  7.8628e-8, 0.092, 0.0068, 0.3816, 0.0016, 60.0, 7.5e-10,   5.0e-8,  0.006,  0.001,   2.0,      0.001,  1.1,     5.0],
 
           // [129.40371704101562, 0.007744332309812307, 0.025889599695801735, 0.00005450226672110148, 1.582629209906372e-7, 6.074812830547671e-8, 0.00010538144852034748, 1.4562455419309117e-7, 5.1735945305608766e-8, 0.028930267319083214, 0.0030572263058274984, 0.2827710211277008, 0.001538076321594417, 39.12760925292969, 5.102352984565073e-10, 3.937519821306523e-8, 0.002562799723818898, 0.0005523095023818314],
           // [129.40371704101562, 0.007744332309812307, 0.025889599695801735, 0.00005450226672110148, 1.582629209906372e-7, 6.074812830547671e-8, 0.00010538144852034748, 1.4562455419309117e-7, 5.1735945305608766e-8, 0.028930267319083214, 0.0030572263058274984, 0.2827710211277008, 0.001538076321594417, 39.12760925292969, 5.102352984565073e-10, 3.937519821306523e-8, 0.002562799723818898, 0.0005523095023818314],
@@ -478,6 +480,7 @@ define('scripts/pso', [
       const align_thresh = [];
       const all_full_normalized_data = [];
       this.env.simulation.ics = [];
+      const data_scale = [];
 
       for (let i = 0; i < raw_input_data.length; ++i) {
         if (datatypes[i] === 'apd') {
@@ -492,6 +495,7 @@ define('scripts/pso', [
           data_arrays.push(data_array);
           align_thresh.push(0);
           all_full_normalized_data.push(apd_data);
+          data_scale.push(0);
         } else {
           const delta = datatypes[i] === 'calcium' ? 1e-7 : 0.001;
           const nthresh = datatypes[i] === 'calcium' ? this.env.simulation.normalized_ca_align_threshold : this.env.simulation.normalized_align_threshold;
@@ -522,6 +526,7 @@ define('scripts/pso', [
           data_arrays.push(data_array);
           align_thresh.push(curr_trimmed_data[0] - delta);
           all_full_normalized_data.push(full_normalized_data);
+          data_scale.push(data_max - data_min);
         }
 
         // Set up the initial conditions for the data
@@ -548,6 +553,7 @@ define('scripts/pso', [
       this.env.simulation.align_thresh = align_thresh;
       this.env.simulation.full_normalized_data = all_full_normalized_data;
       this.env.simulation.weights = weights;
+      this.env.simulation.data_scale = data_scale;
     }
 
     initializeParticles() {
@@ -1004,6 +1010,7 @@ define('scripts/pso', [
             ['err_type', '1i', () => Pso.err_type_map[this.env.simulation.err_type]],
             ['normalizing', '1i', () => normalize],
             ['auto_normalize', '1i', () => this.env.simulation.auto_normalize],
+            ['data_scale', '1f', (cl_idx) => this.env.simulation.data_scale[cl_idx]],
           ],
           out: [],
           run: final ? this.gl_helper.runFinal : this.gl_helper.runSimulation,
@@ -1367,10 +1374,9 @@ define('scripts/pso', [
 
       await this.runPrepacingIterations();
 
-      if (this.env.simulation.auto_normalize) {
-        for (let i = 0; i < this.env.simulation.period.length; ++i) {
-          await program_map.run_simulation_normalize(i, false, true);
-        }
+      for (let i = 0; i < this.env.simulation.period.length; ++i) {
+        await nextframe();
+        await program_map.run_simulation_normalize(i, false, true);
       }
 
       for (let i = 0; i < this.env.simulation.period.length; ++i) {
@@ -1502,9 +1508,7 @@ define('scripts/pso', [
 
       await this.runFinalPrepacingIterations(cl_idx);
 
-      if (this.env.simulation.auto_normalize) {
-        await this.program_map.run_final_simulation_normalize(cl_idx, Math.max(...this.simulation_lengths));
-      }
+      await this.program_map.run_final_simulation_normalize(cl_idx, Math.max(...this.simulation_lengths));
 
       this.program_map.run_final_simulation(cl_idx, simsize);
 

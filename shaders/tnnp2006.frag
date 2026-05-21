@@ -21,7 +21,7 @@ in vec2 cc;
 uniform float dt, period;
 uniform int num_beats, data_type, err_type;
 uniform float align_thresh;
-uniform float sample_interval, apd_thresh, weight;
+uniform float sample_interval, apd_thresh, weight, data_scale;
 uniform float stim_dur, stim_mag, stim_offset_1, stim_offset_2, stim_t_scale;
 uniform bool prepacing, normalizing, auto_normalize;
 uniform bool stim_biphasic;
@@ -140,6 +140,14 @@ void main() {
     float PNaK = particles_3[2];
     float kNaCa = particles_3[3];
 
+    float scaleCa = particles_4[0];
+    float shiftCa = particles_4[1];
+    float scaleV = particles_4[2];
+    float shiftV = particles_4[3];
+
+    float scale = data_type == 2 ? scaleCa : scaleV;
+    float shift = data_type == 2 ? shiftCa : shiftV;
+
     float V, Cai, CaSR, CaSS, Nai, Ki, Rhat;
     float m, h, j, r, s, xr1, xr2, xs, d, f, f2, fcass;
 
@@ -216,10 +224,7 @@ void main() {
     float maxu = -1.0e10;
     float minu = 1.0e10;
 
-    vec2 norms;
-    if (!prepacing && !normalizing && auto_normalize) {
-        norms = texelFetch(normalize_texture, state_idx, 0).xy;
-    }
+    vec2 norms = texelFetch(normalize_texture, state_idx, 0).xy;
 
     float vidxint, vekidxint, wv1, wv2, wvek1, wvek2;
     int vidx1, vidx2, vekidx1, vekidx2, table_idx1, table_idx2;
@@ -429,6 +434,8 @@ void main() {
             if (auto_normalize) {
                 normed_u = (u - norms[0]) / (norms[1] - norms[0]);
                 prev_u = (prev_u - norms[0]) / (norms[1] - norms[0]);
+            } else {
+                normed_u = scale * (shift+normed_u);
             }
 
             // APD only mode
@@ -456,7 +463,13 @@ void main() {
                     APD_end = (x0*(y1 - apd_thresh) + x1*(apd_thresh - y0)) / (y1-y0);
                     float sim_APD = APD_end - APD_start;
                     float target_APD = texelFetch(data_texture, ivec2(data_index++, 0), 0).r;
-                    error += err_type == 1 ? abs(target_APD - sim_APD) : (target_APD - sim_APD) * (target_APD - sim_APD);
+                    if (err_type == 0) {
+                        error += (target_APD - sim_APD) * (target_APD - sim_APD);
+                    } else if (err_type == 1) {
+                        error += abs(target_APD - sim_APD);
+                    } else if (err_type == 2) {
+                        error += abs(target_APD - sim_APD) / target_APD;
+                    }
                     compared_points += 1;
                 }
             }
@@ -470,7 +483,13 @@ void main() {
                 // Measure curve error
                 if (first_align_upstroke && mod(float(step_count - start_comp), compare_stride) == 0.0) {
                     float actual = texelFetch(data_texture, ivec2(data_index++, 0), 0).r;
-                    error += err_type == 1 ? abs(normed_u - actual) : (normed_u - actual) * (normed_u - actual);
+                    if (err_type == 0) {
+                        error += (normed_u - actual) * (normed_u - actual);
+                    } else if (err_type == 1) {
+                        error += abs(normed_u - actual);
+                    } else if (err_type == 2) {
+                        error += abs((normed_u - actual) / data_scale);
+                    }
                     compared_points += 1;
                 }
             }
@@ -478,7 +497,7 @@ void main() {
 
         // Save time series data for plotting
         if (float(step_count - 1) / float(num_steps - 1) <= cc.x) {
-            saved_value = u;
+            saved_value = scale * (shift+u);
         }
     }
 
